@@ -7,7 +7,7 @@ import {
   Mesh,
   PlaneGeometry,
   Clock,
-  Vector2,
+  Vector3,
 } from "three";
 
 const SCREEN_WIDTH = window.innerWidth;
@@ -16,6 +16,7 @@ const CAMERA_MOVE_INTENSITY = 0.1;
 
 const MAX_USER_SPEED = 10;
 const ACCELERATION = 0.1;
+const STOP_ACCELERATION = 0.91;
 
 function init() {
   const clock = new Clock();
@@ -39,7 +40,8 @@ function init() {
   const user = new Mesh(geometry, material);
   user.position.y = 0.5;
   scene.add(user);
-  const userMoveDirection = new Vector2(0, 0);
+  const forceVector = new Vector3(0, 0, 0);
+  const userControlVector = new Vector3(0, 0, 0);
 
   const plane = new Mesh(
     new PlaneGeometry(10, 10),
@@ -48,37 +50,24 @@ function init() {
   plane.rotation.x = -Math.PI / 2;
   plane.position.set(0, 0, 0);
   scene.add(plane);
-  let currentUserSpeed = 0;
 
   function animate() {
-    const delta = clock.getDelta();
-    const movedDistantion = delta * currentUserSpeed;
-    const directionVectorlength = Math.sqrt(userMoveDirection.x * userMoveDirection.x + userMoveDirection.y * userMoveDirection.y);
+    const forseValue = forceVector.length();
 
-    if (directionVectorlength > 0) {
-        console.log('двигайся ', currentUserSpeed);
-        if (currentUserSpeed < MAX_USER_SPEED) {
-            console.log('разгон ', currentUserSpeed);
-            currentUserSpeed += ACCELERATION;
-        }
+    if (userControlVector.length() > 0) {
+      if (forseValue < MAX_USER_SPEED) {
+        forceVector.add(userControlVector.clone().multiplyScalar(ACCELERATION));
+      }
     } else {
-        console.log('стой ', currentUserSpeed);
-        if (currentUserSpeed > 0) {
-            console.log('тормоз ', currentUserSpeed);
-            currentUserSpeed -= ACCELERATION;
-        }
-        
-        if (currentUserSpeed <= 0) {
-            userMoveDirection.x = 0;
-            userMoveDirection.y = 0;
-        }
+      if (forseValue > 0) {
+        forceVector.multiplyScalar(STOP_ACCELERATION);
+      }
     }
 
-    if (currentUserSpeed > 0) {
-        const coef = movedDistantion / directionVectorlength;
-
-        user.position.x += (userMoveDirection.x * coef);
-        user.position.z += (userMoveDirection.y * coef);
+    if (forseValue > 0) {
+      const delta = clock.getDelta();
+      const movedDistantion = delta * forseValue;
+      user.position.add(forceVector.clone().setLength(movedDistantion));
     }
 
     requestAnimationFrame(animate);
@@ -91,16 +80,36 @@ function init() {
   document.addEventListener("keydown", (event) => {
     switch (event.code) {
       case "KeyW":
-        userMoveDirection.y = -1;
+        userControlVector.z = 1;
         break;
       case "KeyS":
-        userMoveDirection.y = 1;
+        userControlVector.z = -1;
         break;
       case "KeyA":
-        userMoveDirection.x = -1;
+        userControlVector.x = 1;
         break;
       case "KeyD":
-        userMoveDirection.x = 1;
+        userControlVector.x = -1;
+        break;
+
+      default:
+        break;
+    }
+  });
+
+  document.addEventListener("keyup", (event) => {
+    switch (event.code) {
+      case "KeyW":
+        userControlVector.z = 0;
+        break;
+      case "KeyS":
+        userControlVector.z = 0;
+        break;
+      case "KeyA":
+        userControlVector.x = 0;
+        break;
+      case "KeyD":
+        userControlVector.x = 0;
         break;
 
       default:
