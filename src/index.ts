@@ -6,18 +6,21 @@ import {
   Mesh,
   PlaneGeometry,
   Clock,
+  Vector3,
 } from "three";
 import Player from "./Player";
-import Bullet from './Bullet';
+import Bullet from "./Bullet";
+import BulletShotController from "./BulletShotController";
+import Enemy from "./Enemy";
 
 const SCREEN_WIDTH = window.innerWidth;
 const SCREEN_HEIGHT = window.innerHeight;
 
 function init() {
-  const canvas = document.getElementById('root');
+  const canvas = document.getElementById("root");
 
   if (!(canvas instanceof HTMLCanvasElement)) {
-    throw new Error('Root is not canvas!!!');
+    throw new Error("Root is not canvas!!!");
   }
 
   const clock = new Clock();
@@ -32,16 +35,24 @@ function init() {
   camera.position.y = 5;
   camera.lookAt(0, 0, 0);
 
-  const renderer = new WebGLRenderer({canvas});
+  const renderer = new WebGLRenderer({ canvas });
   renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
 
+  const bulletShotController = new BulletShotController();
+  scene.add(bulletShotController);
+
+  let enemies: Array<Enemy> = [];
+
   const user = new Player(canvas);
-  const bullets: Array<Bullet> = [];
-  user.subscribeShot((bullet) => {
-    scene.add(bullet);
-    bullets.push(bullet);
-  });
   scene.add(user);
+  user.subscribeShot((bullet) => {
+    bulletShotController.addBullet(bullet);
+  });
+  user.subscribeMovement(position => {
+    enemies.forEach(enemy => {
+      enemy.setTargetPosition(position);
+    });
+  });
 
   const plane = new Mesh(
     new PlaneGeometry(10, 10),
@@ -51,13 +62,28 @@ function init() {
   plane.position.set(0, 0, 0);
   scene.add(plane);
 
+  setInterval(() => {
+    const newEnemy = new Enemy(new Vector3(0, 0, 0));
+    newEnemy.subscribeDeath(() => {
+      const index = enemies.indexOf(newEnemy);
+      if (index > -1) {
+        enemies.splice(index, 1);
+        scene.remove(newEnemy);
+      }
+    });
+
+    scene.add(newEnemy);
+    enemies.push(newEnemy);
+  }, 1000);
+
   function animate() {
     const delta = clock.getDelta();
-    user.update(delta);
 
-    bullets.forEach(bullet=> {
-      bullet.update(delta);
-    })
+    user.update(delta);
+    bulletShotController.update(delta, enemies);
+    enemies.forEach(enemy => {
+      enemy.update(delta);
+    });
 
     requestAnimationFrame(animate);
 
