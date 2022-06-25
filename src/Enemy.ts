@@ -11,7 +11,6 @@ const SPEED = 1;
 
 export default class Enemy extends Group {
     target: Vector3;
-    box: Box3;
     geometry: BoxGeometry;
     material: MeshBasicMaterial;
     mesh: Mesh;
@@ -21,14 +20,18 @@ export default class Enemy extends Group {
     constructor(startPosition: Vector3) {
         super();
 
-        this.box = new Box3(new Vector3(1, 1, 1), new Vector3(1, 1, 1));
         this.geometry = new BoxGeometry(1, 1, 1);
         this.material = new MeshBasicMaterial({ color: 0xff5555 });
         this.mesh = new Mesh(this.geometry, this.material);
         this.mesh.position.copy(startPosition);
         this.mesh.position.y = 0.5;
         this.add(this.mesh);
+        this.recalculateBoundingBox();
+    }
+
+    private recalculateBoundingBox() {
         this.geometry.computeBoundingBox();
+        this.geometry.boundingBox.applyMatrix4(this.mesh.matrixWorld);
     }
 
     public subscribeDeath(listener: () => void) {
@@ -48,7 +51,7 @@ export default class Enemy extends Group {
     }
 
     public getBox(): Box3 {
-        return this.box;
+        return this.geometry.boundingBox;
     }
 
     public update(delta: number) {
@@ -60,6 +63,6 @@ export default class Enemy extends Group {
         const direction = this.target.clone().sub(this.position);
 
         this.position.add(direction.setLength(distantion));
-        this.box.copy(this.geometry.boundingBox).applyMatrix4(this.mesh.matrixWorld);
+        this.recalculateBoundingBox();
     }
 }

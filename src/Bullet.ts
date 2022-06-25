@@ -1,37 +1,42 @@
-import { Group, Mesh, MeshBasicMaterial, BoxBufferGeometry, Box3, Vector3 } from "three";
+import {
+    Mesh,
+    MeshBasicMaterial,
+    SphereBufferGeometry,
+    Box3,
+    Vector3,
+} from "three";
 
-const SPEED = 100;
+const SPEED = 5;
 
-export default class Bullet extends Group {
+export default class Bullet extends Mesh {
     direction: Vector3;
-    box: Box3;
-    mesh: Mesh;
-    geometry: BoxBufferGeometry;
 
-    constructor(direction: Vector3) {
-        super();
-        
-        this.box = new Box3();
-        this.geometry = new BoxBufferGeometry(0.1, 1, 0.1)
-        this.mesh = new Mesh(
-            this.geometry,
-            new MeshBasicMaterial({ color: 0xff0000 })
-        );
-        this.geometry.computeBoundingBox();
-        this.add(this.mesh);
+    constructor(direction: Vector3, position: Vector3) {
+        const geometry = new SphereBufferGeometry(0.1, 10, 10);
+        const material = new MeshBasicMaterial({ color: 0xff0000 })
+        super(geometry, material);
+
+        this.position.copy(position);
+        this.updateMatrix();
+        this.updateMatrixWorld(true);
+
+        this.recalculateBoundingBox();
 
         this.direction = direction;
     }
 
+    private recalculateBoundingBox() {
+        this.geometry.computeBoundingBox();
+        this.geometry.boundingBox.applyMatrix4(this.matrixWorld);
+    }
+
     public isHit(box: Box3): boolean {
-        return this.box.intersectsBox(box);
+        return this.geometry.boundingBox.intersectsBox(box);
     }
 
     public update(delta: number) {
         const distantion = delta * SPEED;
-        this.position.add(
-            this.direction.clone().setLength(distantion)
-        );
-        this.box.copy(this.geometry.boundingBox).applyMatrix4(this.mesh.matrixWorld);
+        this.position.add(this.direction.clone().setLength(distantion));
+        this.recalculateBoundingBox();
     }
 }
