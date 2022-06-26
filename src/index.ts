@@ -11,11 +11,30 @@ import {
 import Player from "./Player";
 import BulletShotController from "./BulletShotController";
 import Enemy from "./Enemy";
+import Connection from "./Connection";
 
 const SCREEN_WIDTH = window.innerWidth;
 const SCREEN_HEIGHT = window.innerHeight;
 
+async function connect() {
+    const conection = new Connection();
+    await conection.init();
+
+    conection.joinRoom('wow');
+    conection.subscribeMessage((userId, data) => {
+        console.log(userId, data);
+    });
+
+    document.addEventListener('click', () => {
+        conection.sendMessage({data: 'Wow!'});
+    });
+}
+
 function init() {
+    document.addEventListener('click', () => {
+        connect();
+    }, {once: true});
+
     const canvas = document.getElementById("root");
 
     if (!(canvas instanceof HTMLCanvasElement)) {
@@ -75,7 +94,7 @@ function init() {
 
         scene.add(newEnemy);
         enemies.push(newEnemy);
-    }, 1000);
+    }, 10000);
 
     function animate() {
         const delta = clock.getDelta();
