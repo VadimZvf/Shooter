@@ -8,8 +8,8 @@ import {
 } from "three";
 import Bullet from "./Bullet";
 
-const SCREEN_WIDTH = window.innerWidth;
-const SCREEN_HEIGHT = window.innerHeight;
+let SCREEN_WIDTH = window.innerWidth;
+let SCREEN_HEIGHT = window.innerHeight;
 const CAMERA_DISTANTION = 10;
 
 const ACCELERATION = 0.6;
@@ -43,6 +43,13 @@ export default class Player extends Group {
                 // @ts-ignore
                 canvas.webkitRequestPointerLock;
             canvas.requestPointerLock();
+        });
+
+        window.addEventListener('resize', () => {
+            SCREEN_WIDTH = window.innerWidth;
+            SCREEN_HEIGHT = window.innerHeight;
+            this.camera.aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+            this.camera.updateProjectionMatrix();
         });
 
         this.camera.position.z = CAMERA_DISTANTION;

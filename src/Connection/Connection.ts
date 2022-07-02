@@ -1,18 +1,15 @@
 import RoomBrokerConnection from "./RoomBrokerConnection";
 import P2PConnection from "./P2PConnection";
+import P2PMessage from "./P2PMessage";
 
 type PlayerId = number;
-
-interface IPlayer {
-    id: number;
-}
 
 export default class Connection {
     roomBroker: RoomBrokerConnection;
     peerConnections: {
         [id: PlayerId]: P2PConnection;
     } = {};
-    messageListeners: Array<(userId: number, data: object) => void> = [];
+    messageListeners: Array<(userId: number, data: P2PMessage) => void> = [];
 
     constructor() {
         this.roomBroker = new RoomBrokerConnection();
@@ -83,9 +80,9 @@ export default class Connection {
 
         await p2pConnection.connect();
 
-        p2pConnection.subscribeMessages((data) => {
+        p2pConnection.subscribeMessages((message) => {
             this.messageListeners.forEach(listener => {
-                listener(playerId, data);
+                listener(playerId, message);
             });
         });
 
@@ -126,11 +123,11 @@ export default class Connection {
         console.log('Joined to room');
     }
 
-    public subscribeMessages(listener: (userId: number, data: object) => void) {
+    public subscribeMessages(listener: (userId: number, data: P2PMessage) => void) {
         this.messageListeners.push(listener);
     }
 
-    public sendMessage<Data>(data: Data) {
+    public sendMessage(data: P2PMessage) {
         Object.entries(this.peerConnections).forEach(([id, connection]) => {
             connection.sendMessage(data);
         });

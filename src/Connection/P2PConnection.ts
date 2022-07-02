@@ -1,3 +1,5 @@
+import P2PMessage, { MessageType } from "./P2PMessage";
+
 export default class P2PConnection {
     connection: RTCPeerConnection;
     dataChannel: RTCDataChannel;
@@ -41,7 +43,7 @@ export default class P2PConnection {
             username: "28224511:1379330808",
         },
     ];
-    messageListeners: Array<(data: object) => void> = [];
+    messageListeners: Array<(data: P2PMessage) => void> = [];
     disconnectListeners: Array<() => void> = [];
     ICECandidatesListener: ((candidate: RTCIceCandidateInit) => void) | null = null;
     pendingICEcandidates: RTCIceCandidateInit[] = [];
@@ -106,9 +108,13 @@ export default class P2PConnection {
             });
         });
 
-        this.dataChannel.addEventListener("message", (data) => {
+        this.dataChannel.addEventListener("message", ({data}) => {
             this.messageListeners.forEach((listener) => {
-                listener(data);
+                const buffer = new Int32Array(data);
+                const message = new P2PMessage((buffer[0]) as MessageType);
+                message.setX(buffer[1] / 100)
+                message.setY(buffer[2] / 100)
+                listener(message);
             });
         });
     }
@@ -178,7 +184,7 @@ export default class P2PConnection {
         return this.waitForConnectionOpen();
     }
 
-    public subscribeMessages(listener: (data: object) => void) {
+    public subscribeMessages(listener: (data: P2PMessage) => void) {
         this.messageListeners.push(listener);
     }
 
@@ -186,9 +192,12 @@ export default class P2PConnection {
         this.disconnectListeners.push(listener);
     }
 
-    public sendMessage<Data>(data: Data) {
-        console.log(this.connection.getConfiguration());
-        console.log(this.connection.getStats());
-        this.dataChannel.send(new ArrayBuffer(10));
+    public sendMessage(message: P2PMessage) {
+        const data = new Int32Array(new ArrayBuffer(400));
+        data[0] = message.type;
+        data[1] = Math.ceil(message.x * 100);
+        data[2] = Math.ceil(message.y * 100);
+
+        this.dataChannel.send(data);
     }
 }
