@@ -21,7 +21,7 @@ async function connect() {
     await conection.init();
 
     conection.joinRoom('wow');
-    conection.subscribeMessage((userId, data) => {
+    conection.subscribeMessages((userId, data) => {
         console.log(userId, data);
     });
 
