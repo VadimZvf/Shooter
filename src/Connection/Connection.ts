@@ -129,7 +129,9 @@ export default class Connection {
 
     public sendMessage(data: P2PMessage) {
         Object.entries(this.peerConnections).forEach(([id, connection]) => {
-            connection.sendMessage(data);
+            if (connection.isReady) {
+                connection.sendMessage(data);
+            }
         });
     }
 }

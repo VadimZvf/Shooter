@@ -5,7 +5,8 @@ async function connect() {
     const conection = new Connection();
     await conection.init();
 
-    document.getElementById('login_button').addEventListener('click', async () => {
+    document.getElementById('login_interface').addEventListener('submit', async (event) => {
+        event.preventDefault();
         const roomNameNode = document.getElementById('room_name_input');
 
         if (!(roomNameNode instanceof HTMLInputElement)) {

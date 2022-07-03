@@ -1,9 +1,9 @@
 import P2PMessage, { MessageType } from "./P2PMessage";
 
 export default class P2PConnection {
-    connection: RTCPeerConnection;
-    dataChannel: RTCDataChannel;
-    isInitiator: Boolean;
+    private connection: RTCPeerConnection;
+    private dataChannel: RTCDataChannel;
+    private isInitiator: Boolean;
     static iceServers = [
         { url: "stun:stun01.sipphone.com", urls: ["stun:stun01.sipphone.com"] },
         { url: "stun:stun.ekiga.net", urls: ["stun:stun.ekiga.net"] },
@@ -43,10 +43,11 @@ export default class P2PConnection {
             username: "28224511:1379330808",
         },
     ];
-    messageListeners: Array<(data: P2PMessage) => void> = [];
-    disconnectListeners: Array<() => void> = [];
-    ICECandidatesListener: ((candidate: RTCIceCandidateInit) => void) | null = null;
-    pendingICEcandidates: RTCIceCandidateInit[] = [];
+    private messageListeners: Array<(data: P2PMessage) => void> = [];
+    private disconnectListeners: Array<() => void> = [];
+    private ICECandidatesListener: ((candidate: RTCIceCandidateInit) => void) | null = null;
+    private pendingICEcandidates: RTCIceCandidateInit[] = [];
+    public isReady: Boolean = false;
 
     constructor() {
         this.connection = new RTCPeerConnection({
@@ -99,10 +100,12 @@ export default class P2PConnection {
 
     private attachListenersToDataChannel() {
         this.dataChannel.addEventListener("open", () => {
+            this.isReady = true;
             console.log("OPEN! event!");
         });
 
         this.dataChannel.addEventListener("close", () => {
+            this.isReady = false;
             this.disconnectListeners.forEach((listener) => {
                 listener();
             });
@@ -110,11 +113,7 @@ export default class P2PConnection {
 
         this.dataChannel.addEventListener("message", ({data}) => {
             this.messageListeners.forEach((listener) => {
-                const buffer = new Int32Array(data);
-                const message = new P2PMessage((buffer[0]) as MessageType);
-                message.setX(buffer[1] / 100)
-                message.setY(buffer[2] / 100)
-                listener(message);
+                listener(P2PMessage.deserialize(data));
             });
         });
     }
@@ -193,11 +192,6 @@ export default class P2PConnection {
     }
 
     public sendMessage(message: P2PMessage) {
-        const data = new Int32Array(new ArrayBuffer(400));
-        data[0] = message.type;
-        data[1] = Math.ceil(message.x * 100);
-        data[2] = Math.ceil(message.y * 100);
-
-        this.dataChannel.send(data);
+        this.dataChannel.send(message.serialize());
     }
 }

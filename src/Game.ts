@@ -52,13 +52,13 @@ export default class Game {
             });
 
             const moveMessage = new P2PMessage(MessageType.MOVE);
-            moveMessage.setX(position.x).setY(position.z);
+            moveMessage.setProp('x', position.x).setProp('z', position.z);
 
             this.connection.sendMessage(moveMessage);
         });
 
         const spawnMessage = new P2PMessage(MessageType.SPAWN);
-        spawnMessage.setX(0).setY(0);
+        spawnMessage.setProp('x', 0).setProp('z', 0);
         this.connection.sendMessage(spawnMessage);
 
         const remotePlayers: IRemotePlayers = {};
@@ -68,8 +68,8 @@ export default class Game {
                 case MessageType.SPAWN:
                     const mesh = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial({ color: 0xbbbb00 }));
                     mesh.position.y = 0.5;
-                    mesh.position.x = message.x;
-                    mesh.position.z = message.y;
+                    mesh.position.x = message.getProp('x');
+                    mesh.position.z = message.getProp('z');
 
                     remotePlayers[playerId] = mesh;
                     scene.add(mesh);
@@ -85,8 +85,8 @@ export default class Game {
                         scene.add(mesh);
                     }
 
-                    remotePlayers[playerId].position.x = message.x;
-                    remotePlayers[playerId].position.z = message.y;
+                    remotePlayers[playerId].position.x = message.getProp('x');
+                    remotePlayers[playerId].position.z = message.getProp('z');
                     break;
 
                 default:
