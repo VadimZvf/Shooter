@@ -3,8 +3,8 @@ const path = require("path");
 
 module.exports = {
   entry: "./src/index.ts",
-  devtool: "inline-source-map",
-  mode: "development",
+  devtool: process.env.NODE_ENV === "development" ? "inline-source-map" : undefined,
+  mode: process.env.NODE_ENV,
   module: {
     rules: [
       {
@@ -19,7 +19,7 @@ module.exports = {
   },
   output: {
     filename: "bundle.js",
-    path: path.resolve(__dirname, "dist"),
+    path: path.resolve(__dirname, "docs"),
   },
   plugins: [
     new HtmlWebpackPlugin({

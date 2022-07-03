@@ -4,9 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "webpack serve",
-    "build": "webpack",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "cross-env NODE_ENV=production webpack",
+    "start": "cross-env NODE_ENV=development webpack serve"
   },
   "author": "",
   "license": "ISC",
@@ -20,6 +19,7 @@
   },
   "dependencies": {
     "@types/three": "^0.141.0",
+    "cross-env": "^7.0.3",
     "socket.io-client": "^4.5.1",
     "three": "^0.141.0"
   }
