@@ -1,6 +1,6 @@
 import { Manager, Socket } from "socket.io-client";
 
-const roomsBrokerServer = "ws://51.250.5.218/";
+const roomsBrokerServer = "https://shooter-room-broker.ru";
 
 interface IPlayer {
     id: number;
