@@ -1,4 +1,4 @@
-import P2PMessage, { MessageType } from "./P2PMessage";
+import P2PMessage, { MessageType } from "../Message";
 
 export default class P2PConnection {
     private connection: RTCPeerConnection;
@@ -55,7 +55,6 @@ export default class P2PConnection {
         });
 
         this.connection.addEventListener("icecandidate", (event) => {
-            console.log("Found icecandidate", event.candidate.candidate);
             if (event.candidate) {
                 if (this.ICECandidatesListener) {
                     this.ICECandidatesListener(event.candidate);
@@ -168,7 +167,7 @@ export default class P2PConnection {
         this.isInitiator = isInitiator;
         if (this.isInitiator) {
             this.dataChannel = this.connection.createDataChannel("data", {
-                ordered: false,
+                ordered: true,
             });
             this.attachListenersToDataChannel();
         } else {

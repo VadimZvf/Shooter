@@ -6,7 +6,6 @@ import {
     Mesh,
     Vector3,
 } from "three";
-import Bullet from "./Bullet";
 
 let SCREEN_WIDTH = window.innerWidth;
 let SCREEN_HEIGHT = window.innerHeight;
@@ -25,10 +24,11 @@ export default class Player extends Group {
         1000
     );
 
+    private mesh: Mesh;
     private energyVector: Vector3 = new Vector3(0, 0, 0);
     private userControlVector: Vector3 = new Vector3(0, 0, 0); // Нажатые клавиши
     private userDirectionVector: Vector3 = new Vector3(0, 0, 0); // Направление движения персонажа
-    private shotListeners: Array<(bullet: Bullet) => void> = [];
+    private shotListeners: Array<(position: Vector3, direction: Vector3) => void> = [];
     private moveListeners: Array<(position: Vector3) => void> = [];
 
     constructor(canvas: HTMLCanvasElement) {
@@ -59,9 +59,9 @@ export default class Player extends Group {
 
         const geometry = new BoxGeometry(1, 1, 1);
         const material = new MeshBasicMaterial({ color: 0x55ff99 });
-        const box = new Mesh(geometry, material);
-        box.position.y = 0.5;
-        this.add(box);
+        this.mesh = new Mesh(geometry, material);
+        this.mesh.position.y = 0.5;
+        this.add(this.mesh);
 
         document.addEventListener("keydown", (event) => {
             switch (event.code) {
@@ -119,39 +119,6 @@ export default class Player extends Group {
         });
     }
 
-    private notifyMovement() {
-        this.moveListeners.forEach((listener) => {
-            listener(this.position.clone());
-        });
-    }
-
-    private getUserDirection(): Vector3 {
-        const lookVector = this.getCameraLookDirection();
-
-        let angle = Math.atan2(lookVector.z, lookVector.x);
-        angle -= Math.PI * 0.5;
-        angle += angle < 0 ? Math.PI * 2 : 0;
-
-        return this.userControlVector.clone().applyAxisAngle(TOP_VECTOR, angle);
-    }
-
-    private getCameraLookDirection(): Vector3 {
-        const lookVector = this.position
-            .clone()
-            .sub(this.camera.getWorldPosition(new Vector3(0, 0, 0)))
-            .normalize();
-        lookVector.y = 0;
-
-        return lookVector;
-    }
-
-    private shot() {
-        const bullet = new Bullet(this.getCameraLookDirection(), this.position.clone());
-        this.shotListeners.forEach((listener) => {
-            listener(bullet);
-        });
-    }
-
     public update(delta: number) {
         const currentSpeed = this.energyVector.length();
 
@@ -183,11 +150,43 @@ export default class Player extends Group {
         return this.camera;
     }
 
-    public subscribeShot(onShot: (bullet: Bullet) => void) {
+    public subscribeShot(onShot: (position: Vector3, direction: Vector3) => void) {
         this.shotListeners.push(onShot);
     }
 
     public subscribeMovement(onMove: (position: Vector3) => void) {
         this.moveListeners.push(onMove);
+    }
+
+    private notifyMovement() {
+        this.moveListeners.forEach((listener) => {
+            listener(this.position.clone());
+        });
+    }
+
+    private getUserDirection(): Vector3 {
+        const lookVector = this.getCameraLookDirection();
+
+        let angle = Math.atan2(lookVector.z, lookVector.x);
+        angle -= Math.PI * 0.5;
+        angle += angle < 0 ? Math.PI * 2 : 0;
+
+        return this.userControlVector.clone().applyAxisAngle(TOP_VECTOR, angle);
+    }
+
+    private getCameraLookDirection(): Vector3 {
+        const lookVector = this.position
+            .clone()
+            .sub(this.camera.getWorldPosition(new Vector3(0, 0, 0)))
+            .normalize();
+        lookVector.y = 0;
+
+        return lookVector;
+    }
+
+    private shot() {
+        this.shotListeners.forEach((listener) => {
+            listener(this.position.clone(), this.getCameraLookDirection());
+        });
     }
 }

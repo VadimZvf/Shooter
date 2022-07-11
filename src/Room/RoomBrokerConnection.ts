@@ -1,6 +1,5 @@
 import { Manager, Socket } from "socket.io-client";
-
-const roomsBrokerServer = "https://shooter-room-broker.ru";
+import config from "../config";
 
 interface IPlayer {
     id: number;
@@ -47,13 +46,18 @@ type IServerToClientMessage = IRoomStateMessage | P2PConnectionAnswerMessage | P
 type IClientToServerMessage = IRequestJoinRoomMessage | P2PConnectionAnswerMessage | P2PConnectionOfferMessage | P2PConnectionICECandidateMessage;
 
 export default class RoomBrokerConnection {
+    static connectionManager: Manager;
+
     manager: Manager;
     connection: Socket;
 
     constructor() {
-        this.manager = new Manager(roomsBrokerServer, {
-            reconnectionDelayMax: 10000,
-        });
+        if (!RoomBrokerConnection.connectionManager) {
+            RoomBrokerConnection.connectionManager = new Manager(config.roomsBrokerUrl, {
+                reconnectionDelayMax: 10000,
+            });
+        }
+        this.manager = RoomBrokerConnection.connectionManager;
     }
 
     private async waitForConnect(): Promise<void> {

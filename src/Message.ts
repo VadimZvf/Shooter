@@ -2,30 +2,39 @@ export enum MessageType {
     'SPAWN',
     'MOVE',
     'SHOT',
-    'DIE'
+    'DIE',
+    'SPAWN_NPC',
+    'DIE_NPC',
+    'MOVE_NPC',
 }
 
 const PROPS = [
+    'id',
     'x',
     'z',
+    'direction_x',
+    'direction_z',
 ] as const;
 
 type Prop = typeof PROPS[number]
 
-export default class P2PMessage {
+export default class Message {
     type: MessageType;
     data: Record<Prop, number> = {
+        id: 0,
         x: 0,
         z: 0,
+        direction_x: 0,
+        direction_z: 0,
     };
 
     constructor(type: MessageType) {
         this.type = type;
     }
 
-    static deserialize(buffer: ArrayBuffer): P2PMessage {
+    static deserialize(buffer: ArrayBuffer): Message {
         const data = new Int32Array(buffer);
-        const message = new P2PMessage((data[0]) as MessageType);
+        const message = new Message((data[0]) as MessageType);
 
         for (let index = 0; index < PROPS.length; index++) {
             const key = PROPS[index];

@@ -1,4 +1,4 @@
-import Connection from "./Connection";
+import Room from "./Room";
 import Game from "./Game";
 
 function init() {
@@ -10,11 +10,10 @@ function init() {
             throw new Error('Cannot find room name input');
         }
 
-        const conection = new Connection();
-        await conection.init();
-        await conection.joinRoom(roomNameNode.value);
+        const room = new Room(roomNameNode.value);
+        await room.connect();
 
-        const game = new Game(conection);
+        const game = new Game(room);
         game.start();
 
         document.body.removeChild(document.getElementById('login_interface'));
