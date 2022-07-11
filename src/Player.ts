@@ -1,3 +1,4 @@
+import EventEmitter from "events";
 import {
     PerspectiveCamera,
     Group,
@@ -28,8 +29,7 @@ export default class Player extends Group {
     private energyVector: Vector3 = new Vector3(0, 0, 0);
     private userControlVector: Vector3 = new Vector3(0, 0, 0); // Нажатые клавиши
     private userDirectionVector: Vector3 = new Vector3(0, 0, 0); // Направление движения персонажа
-    private shotListeners: Array<(position: Vector3, direction: Vector3) => void> = [];
-    private moveListeners: Array<(position: Vector3) => void> = [];
+    public events = new EventEmitter();
 
     constructor(canvas: HTMLCanvasElement) {
         super();
@@ -116,6 +116,7 @@ export default class Player extends Group {
             this.camera.lookAt(this.position);
 
             this.userDirectionVector.copy(this.getUserDirection());
+            this.notifyMovement();
         });
     }
 
@@ -150,18 +151,8 @@ export default class Player extends Group {
         return this.camera;
     }
 
-    public subscribeShot(onShot: (position: Vector3, direction: Vector3) => void) {
-        this.shotListeners.push(onShot);
-    }
-
-    public subscribeMovement(onMove: (position: Vector3) => void) {
-        this.moveListeners.push(onMove);
-    }
-
     private notifyMovement() {
-        this.moveListeners.forEach((listener) => {
-            listener(this.position.clone());
-        });
+        this.events.emit('move', this.position.clone(), this.getCameraLookDirection());
     }
 
     private getUserDirection(): Vector3 {
@@ -185,8 +176,6 @@ export default class Player extends Group {
     }
 
     private shot() {
-        this.shotListeners.forEach((listener) => {
-            listener(this.position.clone(), this.getCameraLookDirection());
-        });
+        this.events.emit('shot', this.position.clone(), this.getCameraLookDirection());
     }
 }

@@ -6,6 +6,7 @@ import EnemyController from "./EnemyController";
 import Room from "./Room";
 import P2PMessage, { MessageType } from "./Message";
 import Bullet from "./Bullet";
+import RemotePlayer from "./RemotePlayer";
 
 export default class Game {
     private canvas: HTMLCanvasElement;
@@ -16,7 +17,7 @@ export default class Game {
     private player: Player;
     private bulletShotController: BulletShotController;
     private enemyController: EnemyController;
-    private remotePlayers: Record<number, Mesh> = {};
+    private remotePlayers: Record<number, RemotePlayer> = {};
 
     constructor(room: Room) {
         this.room = room;
@@ -66,7 +67,7 @@ export default class Game {
 
         this.player = new Player(this.canvas);
         this.scene.add(this.player);
-        this.player.subscribeShot((position, direction) => {
+        this.player.events.addListener("shot", (position, direction) => {
             const bullet = new Bullet(position, direction);
             this.bulletShotController.addBullet(bullet);
 
@@ -74,9 +75,9 @@ export default class Game {
             message.setProp("x", position.x).setProp("z", position.z).setProp("direction_x", direction.x).setProp("direction_z", direction.z);
             this.room.sendMessage(message);
         });
-        this.player.subscribeMovement((position) => {
+        this.player.events.addListener("move", (position, direction) => {
             const moveMessage = new P2PMessage(MessageType.MOVE);
-            moveMessage.setProp("x", position.x).setProp("z", position.z);
+            moveMessage.setProp("x", position.x).setProp("z", position.z).setProp("direction_x", direction.x).setProp("direction_z", direction.z);
 
             this.room.sendMessage(moveMessage);
         });
@@ -85,30 +86,20 @@ export default class Game {
         spawnMessage.setProp("x", 0).setProp("z", 0);
         this.room.sendMessage(spawnMessage);
 
-        this.room.on("message", (playerId, message) => {
+        this.room.on("message", (playerId, message: P2PMessage) => {
             switch (message.type) {
                 case MessageType.SPAWN:
-                    const mesh = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial({ color: 0xbbbb00 }));
-                    mesh.position.y = 0.5;
-                    mesh.position.x = message.getProp("x");
-                    mesh.position.z = message.getProp("z");
-
-                    this.remotePlayers[playerId] = mesh;
-                    this.scene.add(mesh);
-
+                    this.spawnRemotePlayer(playerId, new Vector3(message.getProp("x"), 0, message.getProp("z")));
                     break;
 
                 case MessageType.MOVE:
+                    const position = new Vector3(message.getProp("x"), 0, message.getProp("z"));
                     if (!this.remotePlayers[playerId]) {
-                        const mesh = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial({ color: 0xbbbb00 }));
-                        mesh.position.y = 0.5;
-
-                        this.remotePlayers[playerId] = mesh;
-                        this.scene.add(mesh);
+                        this.spawnRemotePlayer(playerId, position);
+                        break;
                     }
 
-                    this.remotePlayers[playerId].position.x = message.getProp("x");
-                    this.remotePlayers[playerId].position.z = message.getProp("z");
+                    this.remotePlayers[playerId].move(position, new Vector3(message.getProp("direction_x"), 0, message.getProp("direction_z")));
                     break;
 
                 case MessageType.SHOT:
@@ -118,7 +109,6 @@ export default class Game {
 
                 case MessageType.SPAWN_NPC:
                     this.enemyController.spawn(message.getProp("id"), new Vector3(message.getProp("x"), 0, message.getProp("z")));
-
                     break;
 
                 case MessageType.DIE_NPC:
@@ -141,7 +131,7 @@ export default class Game {
                 enemyId++;
                 const position = new Vector3(Math.random() * 2, 0.5, Math.random() * 2);
                 const message = new P2PMessage(MessageType.SPAWN_NPC);
-                message.setProp('id', enemyId).setProp("x", position.x).setProp("z", position.z);
+                message.setProp("id", enemyId).setProp("x", position.x).setProp("z", position.z);
                 this.room.sendMessage(message);
                 this.enemyController.spawn(enemyId, position);
             }, 10000);
@@ -162,4 +152,12 @@ export default class Game {
 
         this.renderer.render(this.scene, this.player.getCamera());
     };
+
+    private spawnRemotePlayer(id: number, position: Vector3) {
+        const player = new RemotePlayer();
+        player.move(position, new Vector3(0, 0, 0));
+
+        this.remotePlayers[id] = player;
+        this.scene.add(player);
+    }
 }

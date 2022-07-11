@@ -29,19 +29,17 @@ export default class BulletShotController extends Group {
         this.bullets.forEach((bullet) => {
             bullet.update(delta, time);
 
-            if (!this.room.getIsHost()) {
-                return;
-            }
-
             const hitedTarget = targets.find(([id, target]) => {
                 return bullet.isHit(target.getBox());
             });
 
             if (hitedTarget) {
-                hitedTarget[1].hit();
-
                 this.remove(bullet);
                 this.bullets.delete(bullet);
+
+                if (this.room.getIsHost()) {
+                    hitedTarget[1].hit();
+                }
             }
         });
     }

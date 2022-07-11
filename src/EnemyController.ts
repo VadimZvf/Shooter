@@ -34,10 +34,7 @@ export default class EnemyController extends Group {
 
     public move(id: number, position: Vector3) {
         if (!this.enemies[id]) {
-            console.log(this.enemies);
-            console.log(Object.keys(this.enemies), id);
             console.warn(`Enemy ${id} not found!`);
-
             this.spawn(id, position);
             return;
         }
