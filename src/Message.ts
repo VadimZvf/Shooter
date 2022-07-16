@@ -1,12 +1,13 @@
 export enum MessageType {
     'HOST_ID',
-    'SPAWN',
-    'MOVE',
-    'SHOT',
-    'DIE',
-    'SPAWN_NPC',
-    'DIE_NPC',
-    'MOVE_NPC',
+    'PLAYER_SPAWN',
+    'PLAYER_MOVE',
+    'PLAYER_STOP',
+    'PLAYER_SHOT',
+    'PLAYER_DIE',
+    'NPC_SPAWN',
+    'NPC_DIE',
+    'NPC_MOVE',
 }
 
 const PROPS = [

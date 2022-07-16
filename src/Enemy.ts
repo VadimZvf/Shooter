@@ -8,16 +8,20 @@ import {
 } from "three";
 import EventEmitter from "events";
 import Room from "./Room";
+import { IHitable } from "./Hitable";
 
 const SPEED = 1;
+const HIT_DISTANCE = 1;
+const RELOAD_TIME = 2;
 
 export default class Enemy extends Group {
-    private target: Vector3;
+    private target: (Mesh | Group) & IHitable;
     private geometry: BoxGeometry;
     private material: MeshBasicMaterial;
     private mesh: Mesh;
     private life: number = 5;
     private room: Room;
+    private lastHitTime: number = 0;
     public events = new EventEmitter();
 
     constructor(startPosition: Vector3, room: Room) {
@@ -27,41 +31,51 @@ export default class Enemy extends Group {
         this.geometry = new BoxGeometry(1, 1, 1);
         this.material = new MeshBasicMaterial({ color: 0xff5555 });
         this.mesh = new Mesh(this.geometry, this.material);
-        this.mesh.position.copy(startPosition);
         this.mesh.position.y = 0.5;
+        this.position.copy(startPosition);
         this.add(this.mesh);
         this.recalculateBoundingBox();
     }
 
-    public update(delta: number) {
-        if (!this.target) {
+    public update(delta: number, time: number) {
+        if (!this.target || !this.room.getIsHost()) {
             return;
         }
 
-        if (this.room.getIsHost()) {
-            const distantion = delta * SPEED;
-            const direction = this.target.clone().sub(this.position);
-    
-            if (distantion > 0) {
-                this.recalculateBoundingBox();
-    
-                this.events.emit('move', this.position.clone().add(direction.setLength(distantion)));
-            }
+        const movedDistantion = delta * SPEED;
+        const direction = this.target.position.clone().sub(this.position);
+
+        const distantionToTarget = direction.length();
+
+        const leftTimeFromLastHit = time - this.lastHitTime;
+
+        if (distantionToTarget <= HIT_DISTANCE && leftTimeFromLastHit >= RELOAD_TIME) {
+            this.target.hit();
+            this.lastHitTime = time;
+            return;
+        }
+
+
+        if (movedDistantion > 0) {
+            this.recalculateBoundingBox();
+
+            this.events.emit('move', this.position.clone().add(direction.setLength(movedDistantion)));
         }
     }
 
     public move(position: Vector3) {
         this.position.copy(position);
+        this.position.y = 0;
     }
 
-    public recalculateTarget(players: Array<Mesh | Group>) {
+    public recalculateTarget(targets: Array<(Mesh | Group) & IHitable>) {
         let minimumDistance = Infinity;
 
-        for (let player of players) {
-            const distance = player.position.distanceTo(this.position);
+        for (let target of targets) {
+            const distance = target.position.distanceTo(this.position);
             if (minimumDistance > distance) {
                 minimumDistance = distance;
-                this.setTarget(player.position);
+                this.setTarget(target);
             }
         }
     }
@@ -83,11 +97,7 @@ export default class Enemy extends Group {
         this.geometry.boundingBox.applyMatrix4(this.mesh.matrixWorld);
     }
 
-    private setTarget(target: Vector3) {
-        if (this.target) {
-            this.target.copy(target);
-        } else {
-            this.target = target.clone();
-        }
+    private setTarget(target: (Mesh | Group) & IHitable) {
+        this.target = target;
     }
 }

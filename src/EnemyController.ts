@@ -1,16 +1,22 @@
-import {Group, Mesh, Vector3} from 'three';
+import { Group, Mesh, Vector3 } from "three";
 import EventEmitter from "events";
 import Enemy from "./Enemy";
 import Room from "./Room";
+import EnemyTarget from "./EnemyTarget";
+import { IHitable } from "./Hitable";
+
+const MODE: "TOWER" | "SURVIVE" = "TOWER";
 
 export default class EnemyController extends Group {
     private enemies: Record<number, Enemy> = {};
     private room: Room;
+    private tower: EnemyTarget;
     public events = new EventEmitter();
 
-    constructor(room: Room) {
+    constructor(room: Room, tower: EnemyTarget) {
         super();
         this.room = room;
+        this.tower = tower;
     }
 
     public spawn(id: number, position: Vector3): Enemy {
@@ -19,14 +25,14 @@ export default class EnemyController extends Group {
         this.add(enemy);
 
         if (this.room.getIsHost()) {
-            enemy.events.addListener('die', () => {
-                this.events.emit('die', id);
+            enemy.events.addListener("die", () => {
+                this.events.emit("die", id);
                 this.die(id);
             });
-            enemy.events.addListener('move', (position) => this.events.emit('move', id, position));
+            enemy.events.addListener("move", (position) => this.events.emit("move", id, position));
         }
 
-        this.events.emit('spawn', id, position);
+        this.events.emit("spawn", id, position);
         return enemy;
     }
 
@@ -49,15 +55,21 @@ export default class EnemyController extends Group {
         return Object.entries(this.enemies).map(([id, enemy]) => [Number(id), enemy]);
     }
 
-    public update(delta: number, players: Array<Mesh | Group>) {
+    public update(delta: number, time: number, players: Array<(Group | Mesh) & IHitable>) {
         Object.entries(this.enemies).forEach(([enemyId, enemy]) => {
-            enemy.update(delta);
+            enemy.update(delta, time);
         });
 
         if (this.room.getIsHost()) {
-            Object.entries(this.enemies).forEach(([enemyId, enemy]) => {
-                enemy.recalculateTarget(players);
-            });
+            if (MODE === "TOWER") {
+                Object.entries(this.enemies).forEach(([enemyId, enemy]) => {
+                    enemy.recalculateTarget([this.tower]);
+                });
+            } else {
+                Object.entries(this.enemies).forEach(([enemyId, enemy]) => {
+                    enemy.recalculateTarget(players);
+                });
+            }
         }
     }
 }

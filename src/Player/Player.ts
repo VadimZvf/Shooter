@@ -7,6 +7,7 @@ import {
     Mesh,
     Vector3,
 } from "three";
+import { IHitable } from "../Hitable";
 
 let SCREEN_WIDTH = window.innerWidth;
 let SCREEN_HEIGHT = window.innerHeight;
@@ -17,7 +18,7 @@ const STOP_ACCELERATION = 0.02;
 
 const TOP_VECTOR = new Vector3(0, -1, 0);
 
-export default class Player extends Group {
+export default class Player extends Group implements IHitable {
     private camera: PerspectiveCamera = new PerspectiveCamera(
         90,
         SCREEN_WIDTH / SCREEN_HEIGHT,
@@ -31,7 +32,7 @@ export default class Player extends Group {
     private userDirectionVector: Vector3 = new Vector3(0, 0, 0); // Направление движения персонажа
     public events = new EventEmitter();
 
-    constructor(canvas: HTMLCanvasElement) {
+    constructor(canvas: HTMLCanvasElement, spawnPosition: Vector3) {
         super();
 
         canvas.addEventListener("click", () => {
@@ -58,10 +59,12 @@ export default class Player extends Group {
         this.add(this.camera);
 
         const geometry = new BoxGeometry(1, 1, 1);
-        const material = new MeshBasicMaterial({ color: 0x55ff99 });
+        const material = new MeshBasicMaterial({ color: 0x00ff00 });
         this.mesh = new Mesh(geometry, material);
         this.mesh.position.y = 0.5;
         this.add(this.mesh);
+
+        this.position.copy(spawnPosition);
 
         document.addEventListener("keydown", (event) => {
             switch (event.code) {
@@ -110,7 +113,7 @@ export default class Player extends Group {
         document.addEventListener("mousemove", (event) => {
             this.rotateY(event.movementX / 200);
             this.camera.position.y = Math.max(
-                this.camera.position.y - event.movementY / 100,
+                Math.min(this.camera.position.y - event.movementY / 100, 10),
                 0
             );
             this.camera.lookAt(this.position);
@@ -149,6 +152,10 @@ export default class Player extends Group {
 
     public getCamera(): PerspectiveCamera {
         return this.camera;
+    }
+
+    public hit() {
+        console.log('Фаак факк!! Бьют!');
     }
 
     private notifyMovement() {
