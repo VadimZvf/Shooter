@@ -3,6 +3,7 @@ import Player from "./Player";
 import BulletShotController from "./BulletShotController";
 import Enemy from "./Enemy";
 import EnemyController from "./EnemyController";
+import WaveController from "./WaveController";
 import Room from "./Room";
 import P2PMessage, { MessageType } from "./Message";
 import Bullet from "./Bullet";
@@ -17,6 +18,7 @@ export default class Game {
     private player: Player;
     private bulletShotController: BulletShotController;
     private enemyController: EnemyController;
+    private waveController: WaveController;
     private remotePlayers: Record<number, RemotePlayer> = {};
 
     constructor(room: Room) {
@@ -53,6 +55,17 @@ export default class Game {
 
         this.enemyController = new EnemyController(this.room);
         this.scene.add(this.enemyController);
+
+        if (this.room.getIsHost()) {
+            this.enemyController.events.addListener('spawn', (id: number, position: Vector3) => {
+                const message = new P2PMessage(MessageType.SPAWN_NPC);
+                message.setProp("id", id).setProp("x", position.x).setProp("z", position.z);
+                this.room.sendMessage(message);
+            });
+
+            this.waveController = new WaveController(this.enemyController);
+            this.waveController.start();
+        }
 
         this.enemyController.events.addListener("move", (id: number, position: Vector3) => {
             const message = new P2PMessage(MessageType.MOVE_NPC);
@@ -124,18 +137,6 @@ export default class Game {
                     break;
             }
         });
-
-        if (this.room.getIsHost()) {
-            let enemyId = 0;
-            setInterval(() => {
-                enemyId++;
-                const position = new Vector3(Math.random() * 2, 0.5, Math.random() * 2);
-                const message = new P2PMessage(MessageType.SPAWN_NPC);
-                message.setProp("id", enemyId).setProp("x", position.x).setProp("z", position.z);
-                this.room.sendMessage(message);
-                this.enemyController.spawn(enemyId, position);
-            }, 10000);
-        }
 
         this.update();
     }

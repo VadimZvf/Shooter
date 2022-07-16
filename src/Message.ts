@@ -1,4 +1,5 @@
 export enum MessageType {
+    'HOST_ID',
     'SPAWN',
     'MOVE',
     'SHOT',

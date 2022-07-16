@@ -1,16 +1,17 @@
 import EventEmitter from "events";
 import RoomBrokerConnection from "./RoomBrokerConnection";
 import P2PConnection from "./P2PConnection";
-import P2PMessage from "../Message";
-
-type PlayerId = number;
+import P2PMessage, { MessageType } from "../Message";
+import Message from "../Message";
 
 export default class Connection extends EventEmitter {
     private isHost: boolean;
+    private hostId: number;
+    private playerId: number;
     private name: string;
     private roomBroker: RoomBrokerConnection;
     private peerConnections: {
-        [id: PlayerId]: P2PConnection;
+        [id: number]: P2PConnection;
     } = {};
 
     constructor(name: string) {
@@ -48,6 +49,8 @@ export default class Connection extends EventEmitter {
         });
 
         const data = await this.roomBroker.getRoomData(this.name);
+
+        this.playerId = data.playerId;
 
         for (const player of data.players) {
             await this.requestP2PConnection(this.name, player.id);
@@ -98,12 +101,27 @@ export default class Connection extends EventEmitter {
         await p2pConnection.connect();
 
         p2pConnection.subscribeMessages((message) => {
+            if (message.type === MessageType.HOST_ID) {
+                this.hostId = playerId;
+                return;
+            }
+
             this.emit("message", playerId, message);
         });
 
         p2pConnection.subscribeDisconnect(() => {
             delete this.peerConnections[playerId];
             console.log("Player disconnected");
+
+            if (playerId === this.hostId) {
+                const minPlayerId = Math.min(...Object.keys(this.peerConnections).map(Number));
+
+                if (this.playerId < minPlayerId) {
+                    this.isHost = true;
+                    const helloMessage = new Message(MessageType.HOST_ID);
+                    this.sendMessage(helloMessage);
+                }
+            }
         });
     }
 
@@ -141,6 +159,11 @@ export default class Connection extends EventEmitter {
             delete this.peerConnections[playerId];
             console.log("Player disconnected");
         });
+
+        if (this.isHost) {
+            const helloMessage = new Message(MessageType.HOST_ID);
+            p2pConnection.sendMessage(helloMessage);
+        }
     }
 
     private onReceiveICECandidate(playerId: number, candidate: RTCIceCandidateInit) {

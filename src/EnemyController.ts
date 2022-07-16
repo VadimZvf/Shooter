@@ -13,7 +13,7 @@ export default class EnemyController extends Group {
         this.room = room;
     }
 
-    public spawn(id: number, position: Vector3) {
+    public spawn(id: number, position: Vector3): Enemy {
         const enemy = new Enemy(position, this.room);
         this.enemies[id] = enemy;
         this.add(enemy);
@@ -25,6 +25,9 @@ export default class EnemyController extends Group {
             });
             enemy.events.addListener('move', (position) => this.events.emit('move', id, position));
         }
+
+        this.events.emit('spawn', id, position);
+        return enemy;
     }
 
     public die(id: number) {
