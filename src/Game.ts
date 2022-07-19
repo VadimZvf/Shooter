@@ -102,6 +102,7 @@ export default class Game {
             moveMessage.setProp("x", position.x).setProp("z", position.z).setProp("direction_x", direction.x).setProp("direction_z", direction.z);
 
             this.room.sendMessage(moveMessage);
+            this.plane.setCenter(position);
         });
 
         const spawnMessage = new P2PMessage(MessageType.PLAYER_SPAWN);
