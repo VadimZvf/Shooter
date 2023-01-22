@@ -1,4 +1,5 @@
-import { Scene, WebGLRenderer, MeshBasicMaterial, Mesh, PlaneGeometry, BoxGeometry, Clock, Vector3 } from "three";
+import { Scene, WebGLRenderer, Clock, Vector3 } from "three";
+import { BloomEffect, EffectComposer, EffectPass, RenderPass } from "postprocessing";
 import Player from "./Player";
 import BulletShotController from "./BulletShotController";
 import EnemyController from "./EnemyController";
@@ -18,6 +19,7 @@ export default class Game {
     private clock = new Clock();
     private scene = new Scene();
     private renderer: WebGLRenderer;
+    private composer: EffectComposer;
     private player: Player;
     private plane: Plane;
     private bulletShotController: BulletShotController;
@@ -66,15 +68,10 @@ export default class Game {
         this.scene.add(this.enemyController);
 
         if (this.room.getIsHost()) {
-            this.enemyController.events.addListener('spawn', (id: number, position: Vector3) => {
-                const message = new P2PMessage(MessageType.NPC_SPAWN);
-                message.setProp("id", id).setProp("x", position.x).setProp("z", position.z);
-                this.room.sendMessage(message);
-            });
-
-            this.waveController = new WaveController(this.enemyController);
-            this.waveController.start();
+            this.initHost();
         }
+
+        this.room.on('receive_host_role', () => this.initHost());
 
         this.enemyController.events.addListener("move", (id: number, position: Vector3) => {
             const message = new P2PMessage(MessageType.NPC_MOVE);
@@ -148,7 +145,17 @@ export default class Game {
             }
         });
 
+        this.initPostprocessing();
         this.update();
+    }
+
+    private initPostprocessing() {
+        this.composer = new EffectComposer(this.renderer);
+        this.composer.addPass(new RenderPass(this.scene, this.player.getCamera()));
+        this.composer.addPass(new EffectPass(this.player.getCamera(), new BloomEffect({
+            intensity: 5,
+            luminanceSmoothing: 0.01
+        })));
     }
 
     private update = () => {
@@ -162,8 +169,19 @@ export default class Game {
 
         requestAnimationFrame(this.update);
 
-        this.renderer.render(this.scene, this.player.getCamera());
+        this.composer.render();
     };
+
+    private initHost() {
+        this.enemyController.events.addListener('spawn', (id: number, position: Vector3) => {
+            const message = new P2PMessage(MessageType.NPC_SPAWN);
+            message.setProp("id", id).setProp("x", position.x).setProp("z", position.z);
+            this.room.sendMessage(message);
+        });
+
+        this.waveController = new WaveController(this.enemyController, RESPAWN_POINT);
+        this.waveController.start();
+    }
 
     private end() {
         this.clock.stop();

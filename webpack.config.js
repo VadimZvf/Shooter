@@ -8,6 +8,10 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /\.frag$/i,
+        use: 'raw-loader',
+      },
+      {
         test: /\.ts$/,
         use: "ts-loader",
         exclude: /node_modules/,

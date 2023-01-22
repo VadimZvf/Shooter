@@ -120,6 +120,7 @@ export default class Connection extends EventEmitter {
                     this.isHost = true;
                     const helloMessage = new Message(MessageType.HOST_ID);
                     this.sendMessage(helloMessage);
+                    this.emit('receive_host_role');
                 }
             }
         });

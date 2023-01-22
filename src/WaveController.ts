@@ -1,18 +1,20 @@
-import { Vector3 } from 'three';
+import { Vector3, Spherical, MathUtils } from 'three';
 import EnemyController from './EnemyController';
 
 let ENEMY_ID = 1;
-const WAVE_INTERVAL = 10000;
-const spawnCenter = new Vector3(0, 0, 0);
-const spawnSpread = 2;
+const WAVE_INTERVAL = 1000;
+const spawnMaxDistance = 100;
+const spawnMinDistance = 50;
 
 export default class WaveController {
     private enemyController: EnemyController;
+    private spawnCenter: Vector3;
     private waveNumber = 0;
     private enemiesLeft = 0;
 
-    constructor(enemyController: EnemyController) {
+    constructor(enemyController: EnemyController, spawnCenter: Vector3) {
         this.enemyController = enemyController;
+        this.spawnCenter = spawnCenter;
     }
 
     public start() {
@@ -27,16 +29,20 @@ export default class WaveController {
 
     private startWave() {
         this.waveNumber++;
-        const enemiesCount = this.waveNumber;
+        const enemiesCount = this.waveNumber * 10;
         console.log(`Start wave ${this.waveNumber}`);
 
         this.enemiesLeft = enemiesCount;
         for (let index = 0; index < enemiesCount; index++) {
-            const enemy = this.enemyController.spawn(ENEMY_ID, new Vector3(
-                spawnCenter.x + ((Math.random() * 2) - 1) * spawnSpread,
-                spawnCenter.y,
-                spawnCenter.z + ((Math.random() * 2) - 1) * spawnSpread,
-            ));
+            const sphericalPoint = new Spherical(
+                spawnMinDistance + (spawnMaxDistance - spawnMinDistance) * Math.random(),
+                Math.PI / 2,
+                Math.PI  * 2 * Math.random(),
+            );
+            const enemy = this.enemyController.spawn(
+                ENEMY_ID,
+                new Vector3().setFromSpherical(sphericalPoint).add(this.spawnCenter)
+            );
             ENEMY_ID++;
             enemy.events.addListener('die', () => {
                 this.onEnemyDie();

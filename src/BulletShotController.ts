@@ -4,7 +4,7 @@ import Room from "./Room";
 
 interface IHitable {
     getBox(): Box3;
-    hit(): void;
+    hit(time: number): void;
 }
 
 export default class BulletShotController extends Group {
@@ -38,7 +38,7 @@ export default class BulletShotController extends Group {
                 this.bullets.delete(bullet);
 
                 if (this.room.getIsHost()) {
-                    hitedTarget[1].hit();
+                    hitedTarget[1].hit(time);
                 }
             }
         });
