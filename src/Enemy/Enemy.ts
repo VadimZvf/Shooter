@@ -8,7 +8,7 @@ import {
 } from "three";
 import EventEmitter from "events";
 import Room from "../Room";
-import { IHitable } from "../Hitable";
+import { IHitable } from "../IHitable";
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
 
@@ -91,7 +91,9 @@ export default class Enemy extends Group {
     }
 
     public hit(time: number) {
+        console.log('hit!');
         this.material.uniforms.uSparkleTime.value = time;
+        this.events.emit('hit');
         this.life = this.life - 1;
 
         if (this.life <= 0) {

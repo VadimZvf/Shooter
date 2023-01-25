@@ -7,7 +7,7 @@ import {
     Mesh,
     Vector3,
 } from "three";
-import { IHitable } from "../Hitable";
+import { IHitable } from "../IHitable";
 
 let SCREEN_WIDTH = window.innerWidth;
 let SCREEN_HEIGHT = window.innerHeight;

@@ -1,6 +1,6 @@
 import EventEmitter from "events";
 import { Group, Mesh, BoxGeometry, MeshBasicMaterial, Vector3 } from "three";
-import { IHitable } from "./Hitable";
+import { IHitable } from "./IHitable";
 
 export default class EnemyTarget extends Group implements IHitable {
     private hitLeft = 10;
