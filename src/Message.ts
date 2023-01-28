@@ -8,6 +8,7 @@ export enum MessageType {
     'NPC_SPAWN',
     'NPC_DIE',
     'NPC_MOVE',
+    'NPC_HIT',
 }
 
 const PROPS = [

@@ -7,7 +7,7 @@ import {
     Mesh,
     Vector3,
 } from "three";
-import { IHitable } from "../Hitable";
+import { ICharacter } from "../ICharacter";
 
 let SCREEN_WIDTH = window.innerWidth;
 let SCREEN_HEIGHT = window.innerHeight;
@@ -18,7 +18,7 @@ const STOP_ACCELERATION = 0.02;
 
 const TOP_VECTOR = new Vector3(0, -1, 0);
 
-export default class Player extends Group implements IHitable {
+export default class Player extends Group implements ICharacter {
     private camera: PerspectiveCamera = new PerspectiveCamera(
         90,
         SCREEN_WIDTH / SCREEN_HEIGHT,

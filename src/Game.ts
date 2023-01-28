@@ -1,5 +1,4 @@
 import { Scene, WebGLRenderer, Clock, Vector3 } from "three";
-import { BloomEffect, EffectComposer, EffectPass, RenderPass } from "postprocessing";
 import Player from "./Player";
 import BulletShotController from "./BulletShotController";
 import EnemyController from "./EnemyController";
@@ -19,7 +18,6 @@ export default class Game {
     private clock = new Clock();
     private scene = new Scene();
     private renderer: WebGLRenderer;
-    private composer: EffectComposer;
     private player: Player;
     private plane: Plane;
     private bulletShotController: BulletShotController;
@@ -83,6 +81,10 @@ export default class Game {
             const message = new P2PMessage(MessageType.NPC_DIE).setProp("id", id);
             this.room.sendMessage(message);
         });
+        this.enemyController.events.addListener("hit", (id: number) => {
+            const message = new P2PMessage(MessageType.NPC_HIT).setProp("id", id);
+            this.room.sendMessage(message);
+        });
 
         this.player = new Player(this.canvas, RESPAWN_POINT);
         this.scene.add(this.player);
@@ -133,7 +135,10 @@ export default class Game {
 
                 case MessageType.NPC_DIE:
                     this.enemyController.die(message.getProp("id"));
+                    break;
 
+                case MessageType.NPC_HIT:
+                    this.enemyController.hit(message.getProp("id"), this.clock.getElapsedTime());
                     break;
 
                 case MessageType.NPC_MOVE:
@@ -145,17 +150,7 @@ export default class Game {
             }
         });
 
-        this.initPostprocessing();
         this.update();
-    }
-
-    private initPostprocessing() {
-        this.composer = new EffectComposer(this.renderer);
-        this.composer.addPass(new RenderPass(this.scene, this.player.getCamera()));
-        this.composer.addPass(new EffectPass(this.player.getCamera(), new BloomEffect({
-            intensity: 5,
-            luminanceSmoothing: 0.01
-        })));
     }
 
     private update = () => {
@@ -169,7 +164,7 @@ export default class Game {
 
         requestAnimationFrame(this.update);
 
-        this.composer.render();
+        this.renderer.render(this.scene, this.player.getCamera());
     };
 
     private initHost() {

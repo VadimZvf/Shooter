@@ -4,7 +4,7 @@ import {
     Mesh,
     Vector3,
 } from "three";
-import {IHitable} from './Hitable';
+import {IHitable} from './IHitable';
 
 const TOP_VECTOR = new Vector3(0, -1, 0);
 
