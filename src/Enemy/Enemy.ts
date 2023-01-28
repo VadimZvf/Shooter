@@ -9,6 +9,7 @@ import {
 import EventEmitter from "events";
 import Room from "../Room";
 import { IHitable } from "../IHitable";
+import { ICharacter } from "../ICharacter";
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
 
@@ -16,7 +17,7 @@ const SPEED = 1;
 const HIT_DISTANCE = 1;
 const RELOAD_TIME = 2;
 
-export default class Enemy extends Group {
+export default class Enemy extends Group implements ICharacter {
     private target: (Mesh | Group) & IHitable;
     private geometry: BoxGeometry;
     private material: ShaderMaterial;
@@ -78,7 +79,7 @@ export default class Enemy extends Group {
         this.position.y = 0;
     }
 
-    public recalculateTarget(targets: Array<(Mesh | Group) & IHitable>) {
+    public recalculateTarget(targets: IHitable[]) {
         let minimumDistance = Infinity;
 
         for (let target of targets) {

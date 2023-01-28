@@ -1,6 +1,6 @@
-import { Mesh } from 'three';
+import { Group } from 'three';
 import { IHitable } from './IHitable';
 
-export interface ICharacter extends IHitable, Mesh {
+export interface ICharacter extends IHitable, Group {
     update(delta: number, time: number): void;
 }
