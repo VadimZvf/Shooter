@@ -17,8 +17,10 @@ const SPEED = 1;
 const HIT_DISTANCE = 1;
 const RELOAD_TIME = 2;
 
+type Target = (Mesh | Group) & IHitable;
+
 export default class Enemy extends Group implements ICharacter {
-    private target: (Mesh | Group) & IHitable;
+    private target: Target;
     private geometry: BoxGeometry;
     private material: ShaderMaterial;
     private mesh: Mesh;
@@ -62,7 +64,7 @@ export default class Enemy extends Group implements ICharacter {
         const leftTimeFromLastHit = time - this.lastHitTime;
 
         if (distantionToTarget <= HIT_DISTANCE && leftTimeFromLastHit >= RELOAD_TIME) {
-            this.target.hit();
+            this.target.hit(time);
             this.lastHitTime = time;
             return;
         }
@@ -79,7 +81,7 @@ export default class Enemy extends Group implements ICharacter {
         this.position.y = 0;
     }
 
-    public recalculateTarget(targets: IHitable[]) {
+    public recalculateTarget(targets: Target[]) {
         let minimumDistance = Infinity;
 
         for (let target of targets) {
@@ -92,7 +94,6 @@ export default class Enemy extends Group implements ICharacter {
     }
 
     public hit(time: number) {
-        console.log('hit!');
         this.material.uniforms.uSparkleTime.value = time;
         this.events.emit('hit');
         this.life = this.life - 1;
@@ -111,7 +112,7 @@ export default class Enemy extends Group implements ICharacter {
         this.geometry.boundingBox.applyMatrix4(this.mesh.matrixWorld);
     }
 
-    private setTarget(target: (Mesh | Group) & IHitable) {
+    private setTarget(target: Target) {
         this.target = target;
     }
 }

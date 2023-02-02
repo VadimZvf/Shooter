@@ -1,4 +1,3 @@
-import Server from './Server';
-import Client from './Client';
+import {EnemyController} from './EnemyController';
 
-export {Server, Client};
+export default EnemyController;
