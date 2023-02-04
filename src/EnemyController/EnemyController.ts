@@ -19,7 +19,7 @@ export class EnemyController extends Group implements IEnemyController {
     }
 
     public spawn(id: number, position: Vector3): Enemy {
-        const enemy = new Enemy(position, this.room);
+        const enemy = new Enemy(position);
         this.enemies.set(id, enemy);
         this.add(enemy);
         return enemy;

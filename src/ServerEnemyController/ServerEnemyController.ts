@@ -1,15 +1,15 @@
 import { Vector3 } from "three";
-import Room from "./Room";
-import { IHitable } from "./IHitable";
-import { EnemyController as Base } from "./Common";
-import Enemy from "./Enemy";
+import Room from "../Room";
+import { IHitable } from "../IHitable";
+import Enemy from "../Enemy";
 
 const MODE: "TOWER" | "SURVIVE" = "TOWER";
+const SPEED = 1;
+const HIT_DISTANCE = 1;
+const RELOAD_TIME = 2;
 
-export default class ServerEnemyController extends Base {
+export class ServerEnemyController {
     constructor(room: Room, tower: IHitable) {
-        super();
-        this.room = room;
         this.tower = tower;
     }
 
@@ -36,6 +36,31 @@ export default class ServerEnemyController extends Base {
             Object.entries(this.enemies).forEach(([enemyId, enemy]) => {
                 enemy.recalculateTarget(players);
             });
+        }
+    }
+
+    private moveEnemy() {
+        if (!this.target) {
+            return;
+        }
+
+        const movedDistantion = delta * SPEED;
+        const direction = this.target.position.clone().sub(this.position);
+
+        const distantionToTarget = direction.length();
+
+        const leftTimeFromLastHit = time - this.lastHitTime;
+
+        if (distantionToTarget <= HIT_DISTANCE && leftTimeFromLastHit >= RELOAD_TIME) {
+            this.target.hit(time);
+            this.lastHitTime = time;
+            return;
+        }
+
+        if (movedDistantion > 0) {
+            this.recalculateBoundingBox();
+
+            this.events.emit('move', this.position.clone().add(direction.setLength(movedDistantion)));
         }
     }
 }
