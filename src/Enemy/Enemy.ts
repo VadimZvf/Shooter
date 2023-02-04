@@ -6,31 +6,18 @@ import {
     Box3,
     ShaderMaterial,
 } from "three";
-import EventEmitter from "events";
-import Room from "../Room";
-import { IHitable } from "../IHitable";
 import { ICharacter } from "../ICharacter";
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
 
-const SPEED = 1;
-const HIT_DISTANCE = 1;
-const RELOAD_TIME = 2;
-
 export default class Enemy extends Group implements ICharacter {
-    private target: (Mesh | Group) & IHitable;
     private geometry: BoxGeometry;
     private material: ShaderMaterial;
     private mesh: Mesh;
-    private life: number = 5;
-    private room: Room;
-    private lastHitTime: number = 0;
-    public events = new EventEmitter();
 
-    constructor(startPosition: Vector3, room: Room) {
+    constructor(startPosition: Vector3) {
         super();
 
-        this.room = room;
         this.geometry = new BoxGeometry(1, 1, 1);
         this.material = new ShaderMaterial({
             uniforms: {
@@ -49,29 +36,6 @@ export default class Enemy extends Group implements ICharacter {
 
     public update(delta: number, time: number) {
         this.material.uniforms.uTime.value = time;
-
-        if (!this.target || !this.room.getIsHost()) {
-            return;
-        }
-
-        const movedDistantion = delta * SPEED;
-        const direction = this.target.position.clone().sub(this.position);
-
-        const distantionToTarget = direction.length();
-
-        const leftTimeFromLastHit = time - this.lastHitTime;
-
-        if (distantionToTarget <= HIT_DISTANCE && leftTimeFromLastHit >= RELOAD_TIME) {
-            this.target.hit();
-            this.lastHitTime = time;
-            return;
-        }
-
-        if (movedDistantion > 0) {
-            this.recalculateBoundingBox();
-
-            this.events.emit('move', this.position.clone().add(direction.setLength(movedDistantion)));
-        }
     }
 
     public move(position: Vector3) {
@@ -79,27 +43,8 @@ export default class Enemy extends Group implements ICharacter {
         this.position.y = 0;
     }
 
-    public recalculateTarget(targets: IHitable[]) {
-        let minimumDistance = Infinity;
-
-        for (let target of targets) {
-            const distance = target.position.distanceTo(this.position);
-            if (minimumDistance > distance) {
-                minimumDistance = distance;
-                this.setTarget(target);
-            }
-        }
-    }
-
     public hit(time: number) {
-        console.log('hit!');
         this.material.uniforms.uSparkleTime.value = time;
-        this.events.emit('hit');
-        this.life = this.life - 1;
-
-        if (this.life <= 0) {
-            this.events.emit('die');
-        }
     }
 
     public getBox(): Box3 {
@@ -109,9 +54,5 @@ export default class Enemy extends Group implements ICharacter {
     private recalculateBoundingBox() {
         this.geometry.computeBoundingBox();
         this.geometry.boundingBox.applyMatrix4(this.mesh.matrixWorld);
-    }
-
-    private setTarget(target: (Mesh | Group) & IHitable) {
-        this.target = target;
     }
 }
