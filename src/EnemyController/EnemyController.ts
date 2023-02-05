@@ -1,25 +1,16 @@
-import { Group, Mesh, Vector3 } from "three";
-import EventEmitter from "events";
-import Enemy from "../Enemy";
-import Room from '../Room';
-import {IHitable} from '../IHitable';
-import { IEnemyController } from './IEnemyController';
+import { Group, Vector3 } from 'three';
+import Enemy from '../Enemy';
 
-export class EnemyController extends Group implements IEnemyController {
+export class EnemyController extends Group {
     protected enemies: Map<number, Enemy>;
-    protected events = new EventEmitter();
-    protected room: Room;
-    protected tower: IHitable;
 
-    constructor(room: Room, tower: IHitable) {
+    constructor() {
         super();
-        this.room = room;
-        this.tower = tower;
         this.enemies = new Map();
     }
 
     public spawn(id: number, position: Vector3): Enemy {
-        const enemy = new Enemy(position);
+        const enemy = new Enemy(position, id);
         this.enemies.set(id, enemy);
         this.add(enemy);
         return enemy;
@@ -50,8 +41,8 @@ export class EnemyController extends Group implements IEnemyController {
         return Object.entries(this.enemies).map(([id, enemy]) => [Number(id), enemy]);
     }
 
-    public update(delta: number, time: number, players: Enemy[]) {
-        this.enemies.forEach(enemy => {
+    public update(delta: number, time: number) {
+        this.enemies.forEach((enemy) => {
             enemy.update(delta, time);
         });
     }

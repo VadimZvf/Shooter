@@ -1,7 +1,7 @@
-import { Vector3 } from "three";
+import { Object3D, Box3 } from 'three';
 
-export interface IHitable {
+export interface IHitable extends Object3D {
     hit: (time: number) => void;
 
-    position: Vector3;
+    getBox(): Box3;
 }

@@ -1,11 +1,5 @@
-import EventEmitter from "events";
-import {
-    Mesh,
-    ShaderMaterial,
-    SphereBufferGeometry,
-    Box3,
-    Vector3,
-} from "three";
+import EventEmitter from 'events';
+import { Mesh, ShaderMaterial, SphereBufferGeometry, Box3, Vector3 } from 'three';
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
 
@@ -47,6 +41,10 @@ export default class Bullet extends Mesh {
 
     public isHit(box: Box3): boolean {
         return this.geometry.boundingBox.intersectsBox(box);
+    }
+
+    public hit() {
+        this.events.emit('die');
     }
 
     public update(delta: number, time: number) {

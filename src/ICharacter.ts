@@ -1,6 +1,9 @@
-import { Group } from 'three';
-import { IHitable } from './IHitable';
+import { Group, Box3 } from 'three';
 
-export interface ICharacter extends IHitable, Group {
+export interface ICharacter extends Group {
     update(delta: number, time: number): void;
+
+    hit: (time: number) => void;
+
+    getBox(): Box3;
 }

@@ -1,21 +1,18 @@
-import {
-    BoxGeometry,
-    MeshBasicMaterial,
-    Mesh,
-    Vector3,
-} from "three";
-import {IHitable} from './IHitable';
+import { BoxGeometry, MeshBasicMaterial, Group, Box3, Mesh, Vector3 } from 'three';
+import { ICharacter } from './ICharacter';
 
-const TOP_VECTOR = new Vector3(0, -1, 0);
+export default class RemotePlayer extends Group implements ICharacter {
+    private mesh: Mesh;
 
-export default class RemotePlayer extends Mesh implements IHitable {
     constructor() {
+        super();
+
         const geometry = new BoxGeometry(1, 1, 1);
         const material = new MeshBasicMaterial({ color: 0xffff00 });
+        this.mesh = new Mesh(geometry, material);
+        this.mesh.position.y = 0.5;
 
-        super(geometry, material);
-
-        this.position.y = 0.5;
+        this.add(this.mesh);
     }
 
     public move(position: Vector3, lookVector: Vector3) {
@@ -25,5 +22,11 @@ export default class RemotePlayer extends Mesh implements IHitable {
 
     public hit() {
         console.log('Бьюют соседа!');
+    }
+
+    public update(delta: number, time: number) {}
+
+    public getBox(): Box3 {
+        return this.mesh.geometry.boundingBox;
     }
 }
