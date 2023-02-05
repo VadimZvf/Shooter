@@ -1,24 +1,24 @@
-import EventEmitter from "events";
-import RoomBrokerConnection from "./RoomBrokerConnection";
-import P2PConnection from "./P2PConnection";
-import P2PMessage, { MessageType } from "../Message";
-import Message from "../Message";
+import EventEmitter from 'events';
+import RoomBrokerConnection from './RoomBrokerConnection';
+import P2PConnection from './P2PConnection';
+import P2PMessage, { MessageType } from '../Message';
+import Message from '../Message';
 
 export default class Connection extends EventEmitter {
     private isHost: boolean;
     private hostId: number;
-    private playerId: number;
     private name: string;
     private roomBroker: RoomBrokerConnection;
     private peerConnections: {
         [id: number]: P2PConnection;
     } = {};
+    public playerId: number;
 
     constructor(name: string) {
         super();
 
         if (!name) {
-            throw new Error("Room name required!");
+            throw new Error('Room name required!');
         }
 
         this.isHost = false;
@@ -29,17 +29,17 @@ export default class Connection extends EventEmitter {
     public async connect(): Promise<void> {
         await this.roomBroker.init();
 
-        this.roomBroker.subscribeMessages("p2p-connection-offer", (data: { roomName: string; playerId: number; offer: RTCSessionDescriptionInit }) => {
+        this.roomBroker.subscribeMessages('p2p-connection-offer', (data: { roomName: string; playerId: number; offer: RTCSessionDescriptionInit }) => {
             if (data.roomName !== this.name) {
                 console.warn(`Receive wrong room connection offer: ${data.roomName}, current room: ${this.name}`);
                 return;
             }
 
             this.onP2PConnectionRequest(data.roomName, data.playerId, data.offer);
-            console.log("New player connected");
+            console.log('New player connected');
         });
 
-        this.roomBroker.subscribeMessages("p2p-connection-ice-candidate", (data: { roomName: string; playerId: number; candidate: RTCIceCandidateInit }) => {
+        this.roomBroker.subscribeMessages('p2p-connection-ice-candidate', (data: { roomName: string; playerId: number; candidate: RTCIceCandidateInit }) => {
             if (data.roomName !== this.name) {
                 console.warn(`Receive ICE candidate with wrong room: ${data.roomName}, current room: ${this.name}`);
                 return;
@@ -56,7 +56,7 @@ export default class Connection extends EventEmitter {
             await this.requestP2PConnection(this.name, player.id);
         }
 
-        console.log("Joined to room");
+        console.log('Joined to room');
 
         this.isHost = data.players.length === 0;
     }
@@ -75,7 +75,7 @@ export default class Connection extends EventEmitter {
 
     private async requestP2PConnection(roomName: string, playerId: number) {
         if (this.peerConnections[playerId]) {
-            throw new Error("Connection already exist for player: " + playerId + " !");
+            throw new Error('Connection already exist for player: ' + playerId + ' !');
         }
 
         const p2pConnection = new P2PConnection();
@@ -83,7 +83,7 @@ export default class Connection extends EventEmitter {
 
         p2pConnection.onReceiveLocalICECandidate((candidate) => {
             this.roomBroker.sendMessage({
-                type: "p2p-connection-ice-candidate",
+                type: 'p2p-connection-ice-candidate',
                 data: { roomName, playerId, candidate },
             });
         });
@@ -92,9 +92,9 @@ export default class Connection extends EventEmitter {
 
         const offer = await p2pConnection.createOffer();
 
-        this.roomBroker.sendMessage({ type: "p2p-connection-offer", data: { roomName, playerId, offer } });
+        this.roomBroker.sendMessage({ type: 'p2p-connection-offer', data: { roomName, playerId, offer } });
 
-        const { answer } = await this.roomBroker.waitForMessage("p2p-connection-answer");
+        const { answer } = await this.roomBroker.waitForMessage('p2p-connection-answer');
 
         await p2pConnection.setAnswer(answer);
 
@@ -106,12 +106,12 @@ export default class Connection extends EventEmitter {
                 return;
             }
 
-            this.emit("message", playerId, message);
+            this.emit('message', playerId, message);
         });
 
         p2pConnection.subscribeDisconnect(() => {
             delete this.peerConnections[playerId];
-            console.log("Player disconnected");
+            console.log('Player disconnected');
 
             if (playerId === this.hostId) {
                 const minPlayerId = Math.min(...Object.keys(this.peerConnections).map(Number));
@@ -128,7 +128,7 @@ export default class Connection extends EventEmitter {
 
     private async onP2PConnectionRequest(roomName: string, playerId: number, offer: RTCSessionDescriptionInit) {
         if (this.peerConnections[playerId]) {
-            throw new Error("Connection already exist for player: " + playerId + " !");
+            throw new Error('Connection already exist for player: ' + playerId + ' !');
         }
 
         const p2pConnection = new P2PConnection();
@@ -136,7 +136,7 @@ export default class Connection extends EventEmitter {
 
         p2pConnection.onReceiveLocalICECandidate((candidate) => {
             this.roomBroker.sendMessage({
-                type: "p2p-connection-ice-candidate",
+                type: 'p2p-connection-ice-candidate',
                 data: { roomName, playerId, candidate },
             });
         });
@@ -146,19 +146,19 @@ export default class Connection extends EventEmitter {
         const answer = await p2pConnection.createAnswer(offer);
 
         this.roomBroker.sendMessage({
-            type: "p2p-connection-answer",
+            type: 'p2p-connection-answer',
             data: { roomName, playerId, answer },
         });
 
         await p2pConnection.connect();
 
         p2pConnection.subscribeMessages((message) => {
-            this.emit("message", playerId, message);
+            this.emit('message', playerId, message);
         });
 
         p2pConnection.subscribeDisconnect(() => {
             delete this.peerConnections[playerId];
-            console.log("Player disconnected");
+            console.log('Player disconnected');
         });
 
         if (this.isHost) {
@@ -169,7 +169,7 @@ export default class Connection extends EventEmitter {
 
     private onReceiveICECandidate(playerId: number, candidate: RTCIceCandidateInit) {
         if (!this.peerConnections[playerId]) {
-            throw new Error("Cannot apply ICE candidate, connection for player - " + playerId + " dosent exist!");
+            throw new Error('Cannot apply ICE candidate, connection for player - ' + playerId + ' dosent exist!');
         }
 
         this.peerConnections[playerId].addICECandidate(candidate);

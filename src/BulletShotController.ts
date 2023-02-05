@@ -1,20 +1,8 @@
-import { Group, Box3, Vector3 } from "three";
-import Bullet from "./Bullet";
-import Room from "./Room";
-
-interface IHitable {
-    getBox(): Box3;
-    hit(time: number): void;
-}
+import { Group } from 'three';
+import Bullet from './Bullet';
 
 export default class BulletShotController extends Group {
-    private bullets = new Set<Bullet>();
-    private room: Room;
-
-    constructor(room: Room) {
-        super();
-        this.room = room;
-    }
+    public bullets = new Set<Bullet>();
 
     public addBullet(bullet: Bullet) {
         this.add(bullet);
@@ -25,22 +13,13 @@ export default class BulletShotController extends Group {
         });
     }
 
-    public update(delta: number, time: number, targets: [number, IHitable][]) {
+    public deleteBullet(bullet: Bullet) {
+        this.bullets.delete(bullet);
+    }
+
+    public update(delta: number, time: number) {
         this.bullets.forEach((bullet) => {
             bullet.update(delta, time);
-
-            const hitedTarget = targets.find(([id, target]) => {
-                return bullet.isHit(target.getBox());
-            });
-
-            if (hitedTarget) {
-                this.remove(bullet);
-                this.bullets.delete(bullet);
-
-                if (this.room.getIsHost()) {
-                    hitedTarget[1].hit(time);
-                }
-            }
         });
     }
 }

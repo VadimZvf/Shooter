@@ -1,24 +1,30 @@
-import { Vector3, Spherical, MathUtils } from 'three';
-import EnemyController from './EnemyController';
+import EventEmitter from 'events';
+import { Vector3, Spherical } from 'three';
 
-let ENEMY_ID = 1;
 const WAVE_INTERVAL = 1000;
 const spawnMaxDistance = 100;
 const spawnMinDistance = 50;
 
 export default class WaveController {
-    private enemyController: EnemyController;
     private spawnCenter: Vector3;
     private waveNumber = 0;
     private enemiesLeft = 0;
+    public events = new EventEmitter();
 
-    constructor(enemyController: EnemyController, spawnCenter: Vector3) {
-        this.enemyController = enemyController;
+    constructor(spawnCenter: Vector3) {
         this.spawnCenter = spawnCenter;
     }
 
     public start() {
         this.waitForNewWave();
+    }
+
+    public onEnemyDie() {
+        this.enemiesLeft--;
+
+        if (this.enemiesLeft === 0) {
+            this.waitForNewWave();
+        }
     }
 
     private waitForNewWave() {
@@ -34,27 +40,8 @@ export default class WaveController {
 
         this.enemiesLeft = enemiesCount;
         for (let index = 0; index < enemiesCount; index++) {
-            const sphericalPoint = new Spherical(
-                spawnMinDistance + (spawnMaxDistance - spawnMinDistance) * Math.random(),
-                Math.PI / 2,
-                Math.PI  * 2 * Math.random(),
-            );
-            const enemy = this.enemyController.spawn(
-                ENEMY_ID,
-                new Vector3().setFromSpherical(sphericalPoint).add(this.spawnCenter)
-            );
-            ENEMY_ID++;
-            enemy.events.addListener('die', () => {
-                this.onEnemyDie();
-            });
-        }
-    }
-
-    private onEnemyDie() {
-        this.enemiesLeft--;
-
-        if (this.enemiesLeft === 0) {
-            this.waitForNewWave();
+            const sphericalPoint = new Spherical(spawnMinDistance + (spawnMaxDistance - spawnMinDistance) * Math.random(), Math.PI / 2, Math.PI * 2 * Math.random());
+            this.events.emit('spawn', new Vector3().setFromSpherical(sphericalPoint).add(this.spawnCenter));
         }
     }
 }

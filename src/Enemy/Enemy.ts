@@ -1,12 +1,5 @@
-import {
-    Group,
-    BoxGeometry,
-    Mesh,
-    Vector3,
-    Box3,
-    ShaderMaterial,
-} from "three";
-import { ICharacter } from "../ICharacter";
+import { Group, BoxGeometry, Mesh, Vector3, Box3, ShaderMaterial } from 'three';
+import { ICharacter } from '../ICharacter';
 import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
 
@@ -14,10 +7,12 @@ export default class Enemy extends Group implements ICharacter {
     private geometry: BoxGeometry;
     private material: ShaderMaterial;
     private mesh: Mesh;
+    public ID: number;
 
-    constructor(startPosition: Vector3) {
+    constructor(startPosition: Vector3, id: number) {
         super();
 
+        this.ID = id;
         this.geometry = new BoxGeometry(1, 1, 1);
         this.material = new ShaderMaterial({
             uniforms: {
@@ -51,7 +46,7 @@ export default class Enemy extends Group implements ICharacter {
         return this.geometry.boundingBox;
     }
 
-    private recalculateBoundingBox() {
+    public recalculateBoundingBox() {
         this.geometry.computeBoundingBox();
         this.geometry.boundingBox.applyMatrix4(this.mesh.matrixWorld);
     }
