@@ -5,7 +5,6 @@ import P2PMessage, { MessageType } from '../Message';
 import Message from '../Message';
 
 export default class Connection extends EventEmitter {
-    private isHost: boolean;
     private hostId: number;
     private name: string;
     private roomBroker: RoomBrokerConnection;
@@ -21,7 +20,6 @@ export default class Connection extends EventEmitter {
             throw new Error('Room name required!');
         }
 
-        this.isHost = false;
         this.name = name;
         this.roomBroker = new RoomBrokerConnection();
     }
@@ -58,7 +56,9 @@ export default class Connection extends EventEmitter {
 
         console.log('Joined to room');
 
-        this.isHost = data.players.length === 0;
+        if (data.players.length === 0) {
+            this.hostId = this.playerId;
+        }
     }
 
     public sendMessage(data: P2PMessage) {
@@ -70,7 +70,7 @@ export default class Connection extends EventEmitter {
     }
 
     public getIsHost(): boolean {
-        return this.isHost;
+        return this.hostId === this.playerId;
     }
 
     private async requestP2PConnection(roomName: string, playerId: number) {
@@ -102,6 +102,7 @@ export default class Connection extends EventEmitter {
 
         p2pConnection.subscribeMessages((message) => {
             if (message.type === MessageType.HOST_ID) {
+                console.log('receive hello!');
                 this.hostId = playerId;
                 return;
             }
@@ -109,21 +110,7 @@ export default class Connection extends EventEmitter {
             this.emit('message', playerId, message);
         });
 
-        p2pConnection.subscribeDisconnect(() => {
-            delete this.peerConnections[playerId];
-            console.log('Player disconnected');
-
-            if (playerId === this.hostId) {
-                const minPlayerId = Math.min(...Object.keys(this.peerConnections).map(Number));
-
-                if (this.playerId < minPlayerId) {
-                    this.isHost = true;
-                    const helloMessage = new Message(MessageType.HOST_ID);
-                    this.sendMessage(helloMessage);
-                    this.emit('receive_host_role');
-                }
-            }
-        });
+        p2pConnection.subscribeDisconnect(this.performPlayerDisconnection(playerId));
     }
 
     private async onP2PConnectionRequest(roomName: string, playerId: number, offer: RTCSessionDescriptionInit) {
@@ -156,12 +143,9 @@ export default class Connection extends EventEmitter {
             this.emit('message', playerId, message);
         });
 
-        p2pConnection.subscribeDisconnect(() => {
-            delete this.peerConnections[playerId];
-            console.log('Player disconnected');
-        });
+        p2pConnection.subscribeDisconnect(this.performPlayerDisconnection(playerId));
 
-        if (this.isHost) {
+        if (this.hostId === this.playerId) {
             const helloMessage = new Message(MessageType.HOST_ID);
             p2pConnection.sendMessage(helloMessage);
         }
@@ -174,4 +158,20 @@ export default class Connection extends EventEmitter {
 
         this.peerConnections[playerId].addICECandidate(candidate);
     }
+
+    private performPlayerDisconnection = (playerId: number) => () => {
+        delete this.peerConnections[playerId];
+        console.log('Player disconnected');
+
+        if (playerId === this.hostId) {
+            const minPlayerId = Math.min(...Object.keys(this.peerConnections).map(Number), this.playerId);
+
+            if (this.playerId === minPlayerId) {
+                this.hostId = this.playerId;
+                const helloMessage = new Message(MessageType.HOST_ID);
+                this.sendMessage(helloMessage);
+                this.emit('receive_host_role');
+            }
+        }
+    };
 }

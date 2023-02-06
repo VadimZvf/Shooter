@@ -15,8 +15,22 @@ export default class WaveController {
         this.spawnCenter = spawnCenter;
     }
 
+    public syncWaveNumber(waveNumber: number) {
+        this.waveNumber = waveNumber;
+    }
+
+    public syncEnemiesCount(count: number) {
+        this.enemiesLeft = count;
+    }
+
+    public getWaveNumber(): number {
+        return this.waveNumber;
+    }
+
     public start() {
-        this.waitForNewWave();
+        if (this.enemiesLeft === 0) {
+            this.waitForNewWave();
+        }
     }
 
     public onEnemyDie() {
@@ -35,6 +49,8 @@ export default class WaveController {
 
     private startWave() {
         this.waveNumber++;
+
+        this.events.emit('wave_start', this.waveNumber);
         const enemiesCount = this.waveNumber * 10;
         console.log(`Start wave ${this.waveNumber}`);
 

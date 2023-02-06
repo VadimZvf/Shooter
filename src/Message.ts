@@ -1,5 +1,6 @@
 export enum MessageType {
     'HOST_ID',
+    'WAVE_NUMBER',
     'PLAYER_SPAWN',
     'PLAYER_MOVE',
     'PLAYER_STOP',
@@ -11,15 +12,9 @@ export enum MessageType {
     'NPC_HIT',
 }
 
-const PROPS = [
-    'id',
-    'x',
-    'z',
-    'direction_x',
-    'direction_z',
-] as const;
+const PROPS = ['id', 'x', 'z', 'direction_x', 'direction_z'] as const;
 
-type Prop = typeof PROPS[number]
+type Prop = typeof PROPS[number];
 
 export default class Message {
     type: MessageType;
@@ -37,11 +32,11 @@ export default class Message {
 
     static deserialize(buffer: ArrayBuffer): Message {
         const data = new Int32Array(buffer);
-        const message = new Message((data[0]) as MessageType);
+        const message = new Message(data[0] as MessageType);
 
         for (let index = 0; index < PROPS.length; index++) {
             const key = PROPS[index];
-            message.setProp(key, (data[index + 1] / 100))
+            message.setProp(key, data[index + 1] / 100);
         }
 
         return message;

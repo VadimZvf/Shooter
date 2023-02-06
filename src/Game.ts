@@ -74,11 +74,15 @@ export default class Game {
         this.enemyController = new EnemyController();
         this.scene.add(this.enemyController);
 
+        this.waveController = new WaveController(RESPAWN_POINT);
+
         if (this.room.getIsHost()) {
             this.initHost();
         }
 
-        this.room.on('receive_host_role', () => this.initHost());
+        this.room.on('receive_host_role', () => {
+            this.initHost();
+        });
 
         this.player = new Player(this.canvas, RESPAWN_POINT);
         this.scene.add(this.player);
@@ -109,6 +113,12 @@ export default class Game {
         switch (message.type) {
             case MessageType.PLAYER_SPAWN:
                 this.spawnRemotePlayer(playerId, new Vector3(message.getProp('x'), 0, message.getProp('z')));
+
+                if (this.room.getIsHost()) {
+                    const waveNumberInformMessage = new P2PMessage(MessageType.WAVE_NUMBER);
+                    waveNumberInformMessage.setProp('id', this.waveController.getWaveNumber());
+                    this.room.sendMessage(waveNumberInformMessage);
+                }
                 break;
 
             case MessageType.PLAYER_MOVE:
@@ -127,11 +137,7 @@ export default class Game {
                 break;
 
             case MessageType.NPC_SPAWN:
-                const enemy = this.enemyController.spawn(message.getProp('id'), new Vector3(message.getProp('x'), 0, message.getProp('z')));
-
-                if (this.room.getIsHost()) {
-                    this.serverEnemyController.add(message.getProp('id'), enemy);
-                }
+                this.enemyController.spawn(message.getProp('id'), new Vector3(message.getProp('x'), 0, message.getProp('z')));
                 break;
 
             case MessageType.NPC_DIE:
@@ -144,6 +150,10 @@ export default class Game {
 
             case MessageType.NPC_MOVE:
                 this.enemyController.move(message.getProp('id'), new Vector3(message.getProp('x'), 0, message.getProp('z')));
+                break;
+
+            case MessageType.WAVE_NUMBER:
+                this.waveController.syncWaveNumber(message.getProp('id'));
                 break;
 
             default:
@@ -160,8 +170,11 @@ export default class Game {
         this.enemyController.update(delta, time);
         this.bulletShotController.update(delta, time);
 
-        if (this.room.getIsHost()) {
+        if (this.serverEnemyController) {
             this.serverEnemyController.update(delta, time, [this.player, ...Object.values(this.remotePlayers)]);
+        }
+
+        if (this.serverBulletShotController) {
             this.serverBulletShotController.update(time, this.bulletShotController.bullets, this.serverEnemyController.getEnemies());
         }
 
@@ -195,18 +208,28 @@ export default class Game {
             this.performMessage(this.room.playerId, message);
         });
 
+        this.enemyController.getEnemies().forEach(([id, enemy]) => {
+            this.serverEnemyController.add(id, enemy);
+        });
+
         if (!this.serverBulletShotController) {
             this.serverBulletShotController = new ServerBulletShotController();
         }
 
-        this.waveController = new WaveController(RESPAWN_POINT);
+        this.waveController.syncEnemiesCount(this.enemyController.getEnemies().length);
         this.waveController.start();
+        this.waveController.events.addListener('wave_start', (number: number) => {
+            const message = new P2PMessage(MessageType.WAVE_NUMBER);
+            message.setProp('id', number);
+            this.room.sendMessage(message);
+        });
         this.waveController.events.addListener('spawn', (position: Vector3) => {
             const id = createId();
             const message = new P2PMessage(MessageType.NPC_SPAWN);
             message.setProp('id', id).setProp('x', position.x).setProp('z', position.z);
             this.room.sendMessage(message);
             this.performMessage(this.room.playerId, message);
+            this.serverEnemyController.add(id, this.enemyController.getEnemy(id));
         });
     }
 
