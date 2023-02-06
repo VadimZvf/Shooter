@@ -1,3 +1,4 @@
+import { Box3, Vector3 } from 'three';
 import EventEmitter from 'events';
 import { IHitable } from '../IHitable';
 import Enemy from '../Enemy';
@@ -66,5 +67,13 @@ export class ServerEnemy {
         if (this.life <= 0) {
             this.events.emit('die');
         }
+    }
+
+    public getBox(): Box3 {
+        return this.worldObject.getBox();
+    }
+
+    get position(): Vector3 {
+        return this.worldObject.position;
     }
 }

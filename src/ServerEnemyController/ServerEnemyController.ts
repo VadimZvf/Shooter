@@ -45,4 +45,8 @@ export class ServerEnemyController {
             });
         }
     }
+
+    public getEnemies(): Map<number, ServerEnemy> {
+        return this.enemiesServerControllers;
+    }
 }

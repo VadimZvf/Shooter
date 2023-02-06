@@ -127,7 +127,11 @@ export default class Game {
                 break;
 
             case MessageType.NPC_SPAWN:
-                this.enemyController.spawn(message.getProp('id'), new Vector3(message.getProp('x'), 0, message.getProp('z')));
+                const enemy = this.enemyController.spawn(message.getProp('id'), new Vector3(message.getProp('x'), 0, message.getProp('z')));
+
+                if (this.room.getIsHost()) {
+                    this.serverEnemyController.add(message.getProp('id'), enemy);
+                }
                 break;
 
             case MessageType.NPC_DIE:
@@ -158,7 +162,7 @@ export default class Game {
 
         if (this.room.getIsHost()) {
             this.serverEnemyController.update(delta, time, [this.player, ...Object.values(this.remotePlayers)]);
-            this.serverBulletShotController.update(time, this.bulletShotController.bullets, this.enemyController.getEnemies());
+            this.serverBulletShotController.update(time, this.bulletShotController.bullets, this.serverEnemyController.getEnemies());
         }
 
         requestAnimationFrame(this.update);
@@ -182,6 +186,8 @@ export default class Game {
             const message = new P2PMessage(MessageType.NPC_DIE).setProp('id', id);
             this.room.sendMessage(message);
             this.performMessage(this.room.playerId, message);
+
+            this.waveController.onEnemyDie();
         });
         this.serverEnemyController.events.addListener('hit', (id: number) => {
             const message = new P2PMessage(MessageType.NPC_HIT).setProp('id', id);
