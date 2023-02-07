@@ -37,7 +37,7 @@ export class EnemyController extends Group {
     }
 
     public getEnemies(): [number, Enemy][] {
-        return Object.entries(this.enemies).map(([id, enemy]) => [Number(id), enemy]);
+        return Array.from(this.enemies);
     }
 
     public getEnemy(id: number): Enemy {
