@@ -18,6 +18,8 @@ export default class RemotePlayer extends Group implements ICharacter {
     public move(position: Vector3, lookVector: Vector3) {
         this.position.x = position.x;
         this.position.z = position.z;
+
+        this.lookAt(lookVector.add(this.position));
     }
 
     public hit() {
