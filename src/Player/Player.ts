@@ -1,38 +1,29 @@
 import EventEmitter from 'events';
-import { PerspectiveCamera, Group, BoxGeometry, Box3, MeshBasicMaterial, Mesh, Vector3 } from 'three';
+import { Clock, PerspectiveCamera, Group, BoxGeometry, Raycaster, Box3, MeshBasicMaterial, Mesh, Vector3, Vector2 } from 'three';
 import { ICharacter } from '../ICharacter';
 
 let SCREEN_WIDTH = window.innerWidth;
 let SCREEN_HEIGHT = window.innerHeight;
 const CAMERA_DISTANTION = 10;
 
-const ACCELERATION = 0.6;
-const STOP_ACCELERATION = 0.02;
-
-const TOP_VECTOR = new Vector3(0, -1, 0);
+const RELOAD_TIME = 0.1;
+const MOVEMENT_SPEED = 10;
 
 export default class Player extends Group implements ICharacter {
     private camera: PerspectiveCamera = new PerspectiveCamera(90, SCREEN_WIDTH / SCREEN_HEIGHT, 0.1, 1000);
-
+    private clock = new Clock();
+    private lastShotTime: number = 0;
     private mesh: Mesh;
-    private energyVector: Vector3 = new Vector3(0, 0, 0);
     private userControlVector: Vector3 = new Vector3(0, 0, 0); // Нажатые клавиши
-    private userDirectionVector: Vector3 = new Vector3(0, 0, 0); // Направление движения персонажа
+    private raycaster: Raycaster = new Raycaster();
+    private mousePointer: Vector2 = new Vector2(0, 0);
+    private coursorWorldPointer: Vector3 = new Vector3(0, 0, 0);
+    private targetPoint: Vector3 | null = null;
+    private ground: Mesh;
     public events = new EventEmitter();
 
-    constructor(canvas: HTMLCanvasElement, spawnPosition: Vector3) {
+    constructor(spawnPosition: Vector3, ground: Mesh) {
         super();
-
-        canvas.addEventListener('click', () => {
-            // @ts-ignore
-            canvas.requestPointerLock =
-                canvas.requestPointerLock ||
-                // @ts-ignore
-                canvas.mozRequestPointerLock ||
-                // @ts-ignore
-                canvas.webkitRequestPointerLock;
-            canvas.requestPointerLock();
-        });
 
         window.addEventListener('resize', () => {
             SCREEN_WIDTH = window.innerWidth;
@@ -42,7 +33,7 @@ export default class Player extends Group implements ICharacter {
         });
 
         this.camera.position.z = CAMERA_DISTANTION;
-        this.camera.position.y = 5;
+        this.camera.position.y = 15;
         this.camera.lookAt(0, 0, 0);
         this.add(this.camera);
 
@@ -53,20 +44,21 @@ export default class Player extends Group implements ICharacter {
         this.add(this.mesh);
 
         this.position.copy(spawnPosition);
+        this.ground = ground;
 
         document.addEventListener('keydown', (event) => {
             switch (event.code) {
                 case 'KeyW':
-                    this.userControlVector.z = 1;
-                    break;
-                case 'KeyS':
                     this.userControlVector.z = -1;
                     break;
+                case 'KeyS':
+                    this.userControlVector.z = 1;
+                    break;
                 case 'KeyA':
-                    this.userControlVector.x = 1;
+                    this.userControlVector.x = -1;
                     break;
                 case 'KeyD':
-                    this.userControlVector.x = -1;
+                    this.userControlVector.x = 1;
                     break;
                 case 'Space':
                     this.shot();
@@ -74,7 +66,6 @@ export default class Player extends Group implements ICharacter {
                 default:
                     break;
             }
-            this.userDirectionVector.copy(this.getUserDirection());
         });
 
         document.addEventListener('keyup', (event) => {
@@ -95,33 +86,49 @@ export default class Player extends Group implements ICharacter {
                 default:
                     break;
             }
-            this.userDirectionVector.copy(this.getUserDirection());
         });
 
         document.addEventListener('mousemove', (event) => {
-            this.rotateY(event.movementX / 200);
-            this.camera.position.y = Math.max(Math.min(this.camera.position.y - event.movementY / 100, 10), 0);
-            this.camera.lookAt(this.position);
+            const mousePosition = this.getMousePosition(event);
 
-            this.userDirectionVector.copy(this.getUserDirection());
-            this.notifyMovement();
+            if (mousePosition) {
+                mousePosition.setY(0.5);
+                this.mesh.lookAt(mousePosition);
+                this.coursorWorldPointer.copy(mousePosition);
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            const mousePosition = this.getMousePosition(event);
+
+            if (mousePosition) {
+                this.targetPoint = mousePosition;
+                this.mesh.lookAt(mousePosition.clone().setY(0.5));
+            }
         });
     }
 
     public update(delta: number) {
-        const currentSpeed = this.energyVector.length();
-
-        // Применяем ускорение
-        if (this.userDirectionVector.length() > 0) {
-            this.energyVector.add(this.userDirectionVector.clone().multiplyScalar(ACCELERATION));
+        if (this.userControlVector.length() > 0) {
+            this.position.add(this.userControlVector.clone().setLength(MOVEMENT_SPEED * delta));
+            this.notifyMovement();
+            this.targetPoint = null;
+            return;
         }
 
-        if (currentSpeed > 0) {
-            // Применяем силу трения
-            this.energyVector.add(this.energyVector.clone().negate().multiplyScalar(STOP_ACCELERATION));
+        if (this.targetPoint) {
+            const distance = this.targetPoint.distanceTo(this.position);
 
-            const movedDistantion = delta * currentSpeed;
-            this.position.add(this.energyVector.clone().setLength(movedDistantion));
+            if (distance > 0.5) {
+                const direction = this.targetPoint
+                    .clone()
+                    .sub(this.position)
+                    .setLength(MOVEMENT_SPEED * delta);
+
+                this.position.add(direction);
+            } else {
+                this.targetPoint = null;
+            }
             this.notifyMovement();
         }
     }
@@ -139,30 +146,27 @@ export default class Player extends Group implements ICharacter {
     }
 
     private notifyMovement() {
-        this.events.emit('move', this.position.clone(), this.getCameraLookDirection());
+        this.events.emit('move', this.position.clone(), this.coursorWorldPointer.clone().sub(this.position));
     }
 
-    private getUserDirection(): Vector3 {
-        const lookVector = this.getCameraLookDirection();
+    private getMousePosition(event: MouseEvent): Vector3 | void {
+        let x = (event.offsetX / SCREEN_WIDTH) * 2 - 1;
+        let y = -(event.offsetY / SCREEN_HEIGHT) * 2 + 1;
+        this.mousePointer.set(x, y);
+        this.raycaster.setFromCamera(this.mousePointer, this.camera);
+        const intersects = this.raycaster.intersectObject(this.ground);
 
-        let angle = Math.atan2(lookVector.z, lookVector.x);
-        angle -= Math.PI * 0.5;
-        angle += angle < 0 ? Math.PI * 2 : 0;
-
-        return this.userControlVector.clone().applyAxisAngle(TOP_VECTOR, angle);
+        for (const intersection of intersects) {
+            if (intersection.point) {
+                return intersection.point;
+            }
+        }
     }
 
-    private getCameraLookDirection(): Vector3 {
-        const lookVector = this.position
-            .clone()
-            .sub(this.camera.getWorldPosition(new Vector3(0, 0, 0)))
-            .normalize();
-        lookVector.y = 0;
-
-        return lookVector;
-    }
-
-    private shot() {
-        this.events.emit('shot', this.position.clone(), this.getCameraLookDirection());
+    public shot() {
+        if (this.clock.getElapsedTime() - this.lastShotTime >= RELOAD_TIME) {
+            this.events.emit('shot', this.position.clone(), this.coursorWorldPointer.clone().sub(this.position));
+            this.lastShotTime = this.clock.getElapsedTime();
+        }
     }
 }

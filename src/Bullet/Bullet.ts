@@ -4,7 +4,7 @@ import fragmentShader from './fragment_shader.frag';
 import vertexShader from './vertex_shader.frag';
 
 const SPEED = 50;
-const LIFE_TIME = 60;
+const LIFE_TIME = 10;
 
 export default class Bullet extends Mesh {
     private direction: Vector3;

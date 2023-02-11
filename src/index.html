@@ -1,31 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;400;600;800&display=swap" rel="stylesheet">
     <title>Shooter</title>
 </head>
+
 <body>
     <style>
-        html, body {
+        html,
+        body {
             margin: 0;
             padding: 0;
             font-size: 0;
+            font-family: 'Kanit', sans-serif;
         }
 
-        #login_interface {
+        .wrapper {
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .form {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .label {
+            margin-bottom: 12px;
+            font-weight: 600;
             font-size: 20px;
         }
+
+        .submit {
+            display: block;
+            width: 100%;
+            font-weight: 600;
+            font-size: 20px;
+            font-family: 'Kanit', sans-serif;
+        }
     </style>
-    <form id="login_interface">
-        <label>
-            Room name: <input type="text" id="room_name_input" />
-        </label>
-        <button type="submit">
-            Go!
-        </button>
-    </form>
+    <div class="wrapper" id="login_interface">
+        <form class="form">
+            <label class="label">
+                <span class="label_text">Room name:</span>
+                <input type="text" id="room_name_input" autofocus />
+            </label>
+            <button class="submit" type="submit">
+                Go!
+            </button>
+        </form>
+    </div>
     <canvas id="root"></canvas>
 </body>
+
 </html>

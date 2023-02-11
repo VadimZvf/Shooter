@@ -11,6 +11,7 @@ import Bullet from './Bullet';
 import RemotePlayer from './RemotePlayer';
 import EnemyTarget from './EnemyTarget';
 import Plane from './Plane';
+import { addScreenSizeListener } from './browserUtils/screenSize';
 
 const RESPAWN_POINT = new Vector3(0, 0, 80);
 let ENEMY_ID = 1;
@@ -38,9 +39,6 @@ export default class Game {
     constructor(room: Room) {
         this.room = room;
 
-        let SCREEN_WIDTH = window.innerWidth;
-        let SCREEN_HEIGHT = window.innerHeight;
-
         const canvas = document.getElementById('root');
 
         if (!(canvas instanceof HTMLCanvasElement)) {
@@ -49,17 +47,13 @@ export default class Game {
 
         this.canvas = canvas;
         this.renderer = new WebGLRenderer({ canvas: this.canvas });
-        this.renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-        window.addEventListener('resize', () => {
-            SCREEN_WIDTH = window.innerWidth;
-            SCREEN_HEIGHT = window.innerHeight;
-            this.renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-        });
+        addScreenSizeListener((width, height) => this.renderer.setSize(width, height));
     }
 
     public start() {
         this.plane = new Plane();
+        this.plane.position.copy(RESPAWN_POINT);
         this.scene.add(this.plane);
 
         this.bulletShotController = new BulletShotController();
@@ -84,7 +78,7 @@ export default class Game {
             this.initHost();
         });
 
-        this.player = new Player(this.canvas, RESPAWN_POINT);
+        this.player = new Player(RESPAWN_POINT, this.plane.getGround());
         this.scene.add(this.player);
         this.player.events.addListener('shot', (position, direction) => {
             const message = new P2PMessage(MessageType.PLAYER_SHOT);
