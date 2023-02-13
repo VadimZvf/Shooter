@@ -80,6 +80,7 @@ export default class Game {
 
         this.player = new Player(RESPAWN_POINT, this.plane.getGround());
         this.scene.add(this.player);
+        this.scene.add(this.player.getCamera());
         this.player.events.addListener('shot', (position, direction) => {
             const message = new P2PMessage(MessageType.PLAYER_SHOT);
             message.setProp('x', position.x).setProp('z', position.z).setProp('direction_x', direction.x).setProp('direction_z', direction.z);
