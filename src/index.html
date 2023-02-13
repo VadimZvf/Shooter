@@ -30,6 +30,19 @@
             justify-content: center;
         }
 
+        .wrapper--fixed {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .wrapper--paranja {
+            background: radial-gradient(#00000022, #000000aa, #000000ee);
+        }
+
         .form {
             display: flex;
             align-items: center;
@@ -42,12 +55,25 @@
             font-size: 20px;
         }
 
-        .submit {
-            display: block;
-            width: 100%;
+        .button {
             font-weight: 600;
             font-size: 20px;
             font-family: 'Kanit', sans-serif;
+        }
+
+        .submit {
+            display: block;
+            width: 100%;
+        }
+
+        .failed {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
     <div class="wrapper" id="login_interface">
@@ -56,12 +82,20 @@
                 <span class="label_text">Room name:</span>
                 <input type="text" id="room_name_input" autofocus />
             </label>
-            <button class="submit" type="submit">
+            <button class="button submit" type="submit">
                 Go!
             </button>
         </form>
     </div>
-    <canvas id="root"></canvas>
+    <div class="wrapper wrapper--fixed wrapper--paranja hidden" id="failed_interface">
+        <div class="failed">
+            <h2>You failed</h2>
+            <button class="button restart" type="button" id="restart">
+                Restart
+            </button>
+        </div>
+    </div>
+    <canvas style="width: 0; height: 0;" id="root"></canvas>
 </body>
 
 </html>

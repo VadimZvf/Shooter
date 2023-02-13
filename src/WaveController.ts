@@ -33,6 +33,10 @@ export default class WaveController {
         }
     }
 
+    public reset() {
+        this.waveNumber = 0;
+    }
+
     public onEnemyDie() {
         this.enemiesLeft--;
 

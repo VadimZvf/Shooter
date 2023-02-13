@@ -2,8 +2,10 @@ import EventEmitter from 'events';
 import { Group, Mesh, Box3, BoxGeometry, MeshBasicMaterial, Vector3 } from 'three';
 import { IHitable } from './IHitable';
 
+const HIST_COUNT = 10;
+
 export default class EnemyTarget extends Group implements IHitable {
-    private hitLeft = 10;
+    private hitLeft = HIST_COUNT;
     private mesh: Mesh;
     public events = new EventEmitter();
 
@@ -27,6 +29,10 @@ export default class EnemyTarget extends Group implements IHitable {
         if (this.hitLeft === 0) {
             this.events.emit('die');
         }
+    }
+
+    public reset() {
+        this.hitLeft = HIST_COUNT;
     }
 
     public getBox(): Box3 {

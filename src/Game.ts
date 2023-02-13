@@ -230,7 +230,23 @@ export default class Game {
 
     private end() {
         this.clock.stop();
-        console.log('Конец!');
+
+        if (this.room.getIsHost()) {
+            const failInterface = document.getElementById('failed_interface');
+            failInterface.classList.remove('hidden');
+
+            document.getElementById('restart').addEventListener(
+                'click',
+                () => {
+                    this.tower.reset();
+                    this.waveController.reset();
+                    this.serverEnemyController.restart();
+                    failInterface.classList.add('hidden');
+                    this.clock.start();
+                },
+                { once: true }
+            );
+        }
     }
 
     private spawnRemotePlayer(id: number, position: Vector3) {

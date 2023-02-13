@@ -49,4 +49,11 @@ export class ServerEnemyController {
     public getEnemies(): Map<number, ServerEnemy> {
         return this.enemiesServerControllers;
     }
+
+    public restart() {
+        this.enemiesServerControllers.forEach((enemy, id) => {
+            this.events.emit('die', id);
+            this.enemiesServerControllers.delete(id);
+        });
+    }
 }
