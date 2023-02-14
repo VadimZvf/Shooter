@@ -1,20 +1,16 @@
 import EventEmitter from 'events';
-import { Clock, PerspectiveCamera, Group, BoxGeometry, Raycaster, Box3, MeshBasicMaterial, Mesh, Vector3, Vector2 } from 'three';
+import { Clock, Group, BoxGeometry, Raycaster, Box3, PerspectiveCamera, MeshBasicMaterial, Mesh, Vector3, Vector2 } from 'three';
 import { ICharacter } from '../ICharacter';
-import { easeInOutQuad } from '../timing/easeInOutQuad';
+import { PlayerCamera } from './PlayerCamera';
 
 let SCREEN_WIDTH = window.innerWidth;
 let SCREEN_HEIGHT = window.innerHeight;
-const CAMERA_DISTANTION = 10;
 
 const RELOAD_TIME = 0.1;
 const MOVEMENT_SPEED = 10;
-const CAMERA_ACCELERATION = 0.8;
-const CAMERA_ACCELERATION_DISTANTION = 10;
 
 export default class Player extends Group implements ICharacter {
-    private camera: PerspectiveCamera = new PerspectiveCamera(90, SCREEN_WIDTH / SCREEN_HEIGHT, 0.1, 1000);
-    private cameraSpeed: number = 0;
+    private camera: PlayerCamera;
 
     private clock = new Clock();
     private lastShotTime: number = 0;
@@ -30,13 +26,6 @@ export default class Player extends Group implements ICharacter {
     constructor(spawnPosition: Vector3, ground: Mesh) {
         super();
 
-        window.addEventListener('resize', () => {
-            SCREEN_WIDTH = window.innerWidth;
-            SCREEN_HEIGHT = window.innerHeight;
-            this.camera.aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
-            this.camera.updateProjectionMatrix();
-        });
-
         const geometry = new BoxGeometry(1, 1, 1);
         const material = new MeshBasicMaterial({ color: 0x00ff00 });
         this.mesh = new Mesh(geometry, material);
@@ -45,8 +34,7 @@ export default class Player extends Group implements ICharacter {
 
         this.position.copy(spawnPosition);
 
-        this.camera.position.copy(this.getCameraTargetPosition());
-        this.camera.lookAt(spawnPosition);
+        this.camera = new PlayerCamera(spawnPosition);
 
         this.ground = ground;
 
@@ -135,20 +123,11 @@ export default class Player extends Group implements ICharacter {
             this.notifyMovement();
         }
 
-        const cameraTargetPosition = this.getCameraTargetPosition();
-        const distanceToCameraTarget = this.camera.position.distanceTo(cameraTargetPosition);
-        if (distanceToCameraTarget > 0.5) {
-            const cameraPositionShift = cameraTargetPosition.sub(this.camera.position).setLength(this.cameraSpeed * delta);
-            this.camera.position.add(cameraPositionShift);
-
-            this.cameraSpeed = Math.min(CAMERA_ACCELERATION_DISTANTION, distanceToCameraTarget) * CAMERA_ACCELERATION;
-        } else {
-            this.cameraSpeed = 0;
-        }
+        this.camera.update(delta);
     }
 
     public getCamera(): PerspectiveCamera {
-        return this.camera;
+        return this.camera.getCamera();
     }
 
     public hit() {
@@ -160,6 +139,7 @@ export default class Player extends Group implements ICharacter {
     }
 
     private notifyMovement() {
+        this.camera.setTargetPosition(this.position);
         this.events.emit('move', this.position.clone(), this.coursorWorldPointer.clone().sub(this.position));
     }
 
@@ -167,7 +147,7 @@ export default class Player extends Group implements ICharacter {
         let x = (event.offsetX / SCREEN_WIDTH) * 2 - 1;
         let y = -(event.offsetY / SCREEN_HEIGHT) * 2 + 1;
         this.mousePointer.set(x, y);
-        this.raycaster.setFromCamera(this.mousePointer, this.camera);
+        this.raycaster.setFromCamera(this.mousePointer, this.camera.getCamera());
         const intersects = this.raycaster.intersectObject(this.ground);
 
         for (const intersection of intersects) {
@@ -175,13 +155,6 @@ export default class Player extends Group implements ICharacter {
                 return intersection.point;
             }
         }
-    }
-
-    private getCameraTargetPosition(): Vector3 {
-        return this.position
-            .clone()
-            .setY(15)
-            .setZ(this.position.z + CAMERA_DISTANTION);
     }
 
     public shot() {
