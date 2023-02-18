@@ -1,5 +1,6 @@
 import { Scene, WebGLRenderer, Clock, Vector3 } from 'three';
 import Player from './Player';
+import PlayerController from './Player/PlayerController';
 import BulletShotController from './BulletShotController';
 import EnemyController from './EnemyController';
 import ServerEnemyController from './ServerEnemyController';
@@ -27,6 +28,7 @@ export default class Game {
     private scene = new Scene();
     private renderer: WebGLRenderer;
     private player: Player;
+    private playerController: PlayerController;
     private plane: Plane;
     private bulletShotController: BulletShotController;
     private enemyController: EnemyController;
@@ -81,19 +83,22 @@ export default class Game {
         this.player = new Player(RESPAWN_POINT, this.plane.getGround());
         this.scene.add(this.player);
         this.scene.add(this.player.getCamera());
-        this.player.events.addListener('shot', (position, direction) => {
+        this.playerController = new PlayerController(this.player, this.plane.getGround(), this.player.getCamera(), this.enemyController);
+        this.playerController.events.addListener('shot', (position, direction) => {
             const message = new P2PMessage(MessageType.PLAYER_SHOT);
             message.setProp('x', position.x).setProp('z', position.z).setProp('direction_x', direction.x).setProp('direction_z', direction.z);
             this.room.sendMessage(message);
             this.performMessage(this.room.playerId, message);
         });
-        this.player.events.addListener('move', (position, direction) => {
+        this.playerController.events.addListener('move', (position, direction) => {
             const moveMessage = new P2PMessage(MessageType.PLAYER_MOVE);
             moveMessage.setProp('x', position.x).setProp('z', position.z).setProp('direction_x', direction.x).setProp('direction_z', direction.z);
 
             this.room.sendMessage(moveMessage);
+            this.player.move(position, direction);
             this.plane.setCenter(position);
         });
+        this.scene.add(this.playerController);
 
         const spawnMessage = new P2PMessage(MessageType.PLAYER_SPAWN);
         spawnMessage.setProp('x', RESPAWN_POINT.x).setProp('z', RESPAWN_POINT.z);
@@ -161,6 +166,7 @@ export default class Game {
         const time = this.clock.getElapsedTime();
 
         this.plane.update(time);
+        this.playerController.update(delta);
         this.player.update(delta);
         this.enemyController.update(delta, time);
         this.bulletShotController.update(delta, time);

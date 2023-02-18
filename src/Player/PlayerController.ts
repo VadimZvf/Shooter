@@ -1,8 +1,6 @@
 import EventEmitter from 'events';
-import { Clock, Group, BoxGeometry, Raycaster, Box3, PerspectiveCamera, MeshBasicMaterial, Mesh, Vector3, Vector2 } from 'three';
-import { ICharacter } from '../ICharacter';
+import { Clock, Group, Raycaster, PerspectiveCamera, Mesh, Vector3, Vector2 } from 'three';
 import EnemyController from '../EnemyController';
-import { PlayerCamera } from './PlayerCamera';
 
 let SCREEN_WIDTH = window.innerWidth;
 let SCREEN_HEIGHT = window.innerHeight;
@@ -10,10 +8,10 @@ let SCREEN_HEIGHT = window.innerHeight;
 const RELOAD_TIME = 0.1;
 const MOVEMENT_SPEED = 10;
 
-export default class PlayerController {
+export default class PlayerController extends Group {
     private camera: PerspectiveCamera;
     private enemyController: EnemyController;
-    private mesh: Mesh;
+    private playerObj: Readonly<{ position: Vector3 }>;
 
     private clock = new Clock();
     private lastShotTime: number = 0;
@@ -25,8 +23,9 @@ export default class PlayerController {
     private ground: Mesh;
     public events = new EventEmitter();
 
-    constructor(mesh: Mesh, ground: Mesh, enemyController: EnemyController, camera: PerspectiveCamera) {
-        this.mesh = mesh;
+    constructor(playerObj: Readonly<{ position: Vector3 }>, ground: Mesh, camera: PerspectiveCamera, enemyController: EnemyController) {
+        super();
+        this.playerObj = playerObj;
         this.camera = camera;
         this.enemyController = enemyController;
         this.ground = ground;
@@ -78,8 +77,8 @@ export default class PlayerController {
 
             if (mousePosition) {
                 mousePosition.setY(0.5);
-                this.mesh.lookAt(mousePosition);
                 this.coursorWorldPointer.copy(mousePosition);
+                this.notifyMovement(this.playerObj.position, mousePosition.clone().sub(this.playerObj.position));
             }
         });
 
@@ -88,35 +87,36 @@ export default class PlayerController {
 
             if (mousePosition) {
                 this.targetPoint = mousePosition;
-                this.mesh.lookAt(mousePosition.clone().setY(0.5));
+                this.notifyMovement(this.playerObj.position, mousePosition);
             }
         });
     }
 
     public update(delta: number) {
         if (this.userControlVector.length() > 0) {
-            this.position.add(this.userControlVector.clone().setLength(MOVEMENT_SPEED * delta));
-            this.notifyMovement();
+            const distancePosition = this.userControlVector
+                .clone()
+                .setLength(MOVEMENT_SPEED * delta)
+                .add(this.playerObj.position);
+
+            this.notifyMovement(distancePosition, this.userControlVector);
             this.targetPoint = null;
         }
 
         if (this.targetPoint) {
-            const distance = this.targetPoint.distanceTo(this.position);
+            const distance = this.targetPoint.distanceTo(this.playerObj.position);
 
             if (distance > 0.5) {
                 const direction = this.targetPoint
                     .clone()
-                    .sub(this.position)
+                    .sub(this.playerObj.position)
                     .setLength(MOVEMENT_SPEED * delta);
 
-                this.position.add(direction);
+                this.notifyMovement(this.playerObj.position.clone().add(direction), direction);
             } else {
                 this.targetPoint = null;
             }
-            this.notifyMovement();
         }
-
-        this.camera.update(delta);
     }
 
     private notifyMovement(newPosition: Vector3, lookAt: Vector3) {
@@ -139,7 +139,8 @@ export default class PlayerController {
 
     public shot() {
         if (this.clock.getElapsedTime() - this.lastShotTime >= RELOAD_TIME) {
-            this.events.emit('shot', this.position.clone(), this.coursorWorldPointer.clone().sub(this.position));
+            const position = this.playerObj.position.clone();
+            this.events.emit('shot', position, this.coursorWorldPointer.clone().sub(position));
             this.lastShotTime = this.clock.getElapsedTime();
         }
     }
