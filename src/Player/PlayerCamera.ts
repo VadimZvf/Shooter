@@ -27,6 +27,12 @@ export class PlayerCamera {
     }
 
     public update(delta: number) {
+        // Пользователь переключился на другое окно, raf зафризился.
+        if (delta > 1) {
+            this.camera.position.copy(this.targetPotision);
+            return;
+        }
+
         const distanceToTarget = this.camera.position.distanceTo(this.targetPotision);
         if (distanceToTarget > 0.5) {
             const cameraPositionShift = this.targetPotision

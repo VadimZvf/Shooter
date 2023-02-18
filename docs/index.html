@@ -57,6 +57,22 @@
             flex-direction: column;
         }
 
+        .enemy-marker {
+            position: fixed;
+            width: 5px;
+            height: 5px;
+            background-color: red;
+            border-radius: 100%;
+        }
+
+        .tower-marker {
+            position: fixed;
+            width: 5px;
+            height: 5px;
+            background-color: blue;
+            border-radius: 100%;
+        }
+
         .hidden {
             display: none;
         }</style><div class="wrapper" id="login_interface"><form class="form"><label class="label"><span class="label_text">Room name:</span> <input id="room_name_input" autofocus/></label> <button class="button submit" type="submit">Go!</button></form></div><div class="wrapper wrapper--fixed wrapper--paranja hidden" id="failed_interface"><div class="failed"><h2>You failed</h2><button class="button restart" type="button" id="restart">Restart</button></div></div><canvas style="width: 0; height: 0;" id="root"></canvas></body></html>

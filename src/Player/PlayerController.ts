@@ -1,5 +1,5 @@
 import EventEmitter from 'events';
-import { Clock, Group, Raycaster, PerspectiveCamera, Mesh, Vector3, Vector2 } from 'three';
+import { Clock, Group, Raycaster, PerspectiveCamera, Mesh, Vector3, Vector2, BoxBufferGeometry, MeshBasicMaterial } from 'three';
 import EnemyController from '../EnemyController';
 
 let SCREEN_WIDTH = window.innerWidth;
@@ -7,6 +7,7 @@ let SCREEN_HEIGHT = window.innerHeight;
 
 const RELOAD_TIME = 0.1;
 const MOVEMENT_SPEED = 10;
+const ENEMY_SHOT_DISTANCE = 4;
 
 export default class PlayerController extends Group {
     private camera: PerspectiveCamera;
@@ -20,6 +21,7 @@ export default class PlayerController extends Group {
     private mousePointer: Vector2 = new Vector2(0, 0);
     private coursorWorldPointer: Vector3 = new Vector3(0, 0, 0);
     private targetPoint: Vector3 | null = null;
+    private targetMarker: Mesh | null = null;
     private ground: Mesh;
     public events = new EventEmitter();
 
@@ -86,21 +88,30 @@ export default class PlayerController extends Group {
             const mousePosition = this.getMousePosition(event);
 
             if (mousePosition) {
-                this.targetPoint = mousePosition;
-                this.notifyMovement(this.playerObj.position, mousePosition);
+                this.coursorWorldPointer.copy(mousePosition);
+
+                if (this.isNearByEnemy(mousePosition)) {
+                    this.shot();
+                } else {
+                    this.targetPoint = mousePosition;
+                    this.createTargetMarker(mousePosition);
+                    this.notifyMovement(this.playerObj.position, mousePosition);
+                }
             }
         });
     }
 
     public update(delta: number) {
         if (this.userControlVector.length() > 0) {
+            this.deleteTargetMarker();
+            this.targetPoint = null;
+
             const distancePosition = this.userControlVector
                 .clone()
                 .setLength(MOVEMENT_SPEED * delta)
                 .add(this.playerObj.position);
 
             this.notifyMovement(distancePosition, this.userControlVector);
-            this.targetPoint = null;
         }
 
         if (this.targetPoint) {
@@ -114,6 +125,7 @@ export default class PlayerController extends Group {
 
                 this.notifyMovement(this.playerObj.position.clone().add(direction), direction);
             } else {
+                this.deleteTargetMarker();
                 this.targetPoint = null;
             }
         }
@@ -137,11 +149,39 @@ export default class PlayerController extends Group {
         }
     }
 
-    public shot() {
+    private isNearByEnemy(position: Vector3): boolean {
+        const enemies = this.enemyController.getEnemies();
+
+        for (const [id, enemy] of enemies) {
+            if (enemy.position.distanceTo(position) <= ENEMY_SHOT_DISTANCE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private shot() {
         if (this.clock.getElapsedTime() - this.lastShotTime >= RELOAD_TIME) {
             const position = this.playerObj.position.clone();
             this.events.emit('shot', position, this.coursorWorldPointer.clone().sub(position));
             this.lastShotTime = this.clock.getElapsedTime();
         }
+    }
+
+    private createTargetMarker(position: Vector3) {
+        if (!this.targetMarker) {
+            this.targetMarker = new Mesh(new BoxBufferGeometry(0.2, 0.2, 0.2), new MeshBasicMaterial({ color: 0xff3333 }));
+            this.add(this.targetMarker);
+        }
+
+        this.targetMarker.position.copy(position).setY(0.5);
+    }
+
+    private deleteTargetMarker() {
+        if (!this.targetMarker) {
+            return;
+        }
+        this.remove(this.targetMarker);
+        this.targetMarker = null;
     }
 }

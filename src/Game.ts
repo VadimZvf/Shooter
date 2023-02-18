@@ -61,28 +61,21 @@ export default class Game {
         this.bulletShotController = new BulletShotController();
         this.scene.add(this.bulletShotController);
 
-        this.tower = new EnemyTarget(RESPAWN_POINT);
+        this.waveController = new WaveController(RESPAWN_POINT);
+
+        this.player = new Player(RESPAWN_POINT, this.plane.getGround());
+        this.scene.add(this.player);
+        this.scene.add(this.player.getCamera());
+
+        this.enemyController = new EnemyController(this.player.getCamera());
+        this.scene.add(this.enemyController);
+
+        this.tower = new EnemyTarget(RESPAWN_POINT, this.player.getCamera());
         this.tower.events.addListener('die', () => {
             this.end();
         });
         this.scene.add(this.tower);
 
-        this.enemyController = new EnemyController();
-        this.scene.add(this.enemyController);
-
-        this.waveController = new WaveController(RESPAWN_POINT);
-
-        if (this.room.getIsHost()) {
-            this.initHost();
-        }
-
-        this.room.on('receive_host_role', () => {
-            this.initHost();
-        });
-
-        this.player = new Player(RESPAWN_POINT, this.plane.getGround());
-        this.scene.add(this.player);
-        this.scene.add(this.player.getCamera());
         this.playerController = new PlayerController(this.player, this.plane.getGround(), this.player.getCamera(), this.enemyController);
         this.playerController.events.addListener('shot', (position, direction) => {
             const message = new P2PMessage(MessageType.PLAYER_SHOT);
@@ -105,6 +98,14 @@ export default class Game {
         this.room.sendMessage(spawnMessage); // Я родился! *(o_o)*
 
         this.room.on('message', this.performMessage);
+
+        if (this.room.getIsHost()) {
+            this.initHost();
+        }
+
+        this.room.on('receive_host_role', () => {
+            this.initHost();
+        });
 
         this.update();
     }
@@ -165,6 +166,7 @@ export default class Game {
         const delta = this.clock.getDelta();
         const time = this.clock.getElapsedTime();
 
+        this.tower.update();
         this.plane.update(time);
         this.playerController.update(delta);
         this.player.update(delta);
