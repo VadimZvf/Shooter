@@ -46,7 +46,7 @@ export class ServerEnemyController {
         }
     }
 
-    public getEnemies(): Map<number, ServerEnemy> {
+    public getEnemies(): Map<number, IHitable> {
         return this.enemiesServerControllers;
     }
 

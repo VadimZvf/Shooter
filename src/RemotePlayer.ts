@@ -3,16 +3,18 @@ import { ICharacter } from './ICharacter';
 
 export default class RemotePlayer extends Group implements ICharacter {
     private mesh: Mesh;
+    private geometry: BoxGeometry;
 
     constructor() {
         super();
 
-        const geometry = new BoxGeometry(1, 1, 1);
         const material = new MeshBasicMaterial({ color: 0xffff00 });
-        this.mesh = new Mesh(geometry, material);
+        this.geometry = new BoxGeometry(1, 1, 1);
+        this.mesh = new Mesh(this.geometry, material);
         this.mesh.position.y = 0.5;
 
         this.add(this.mesh);
+        this.recalculateBoundingBox();
     }
 
     public move(position: Vector3, lookVector: Vector3) {
@@ -30,5 +32,10 @@ export default class RemotePlayer extends Group implements ICharacter {
 
     public getBox(): Box3 {
         return this.mesh.geometry.boundingBox;
+    }
+
+    public recalculateBoundingBox() {
+        this.geometry.computeBoundingBox();
+        this.geometry.boundingBox.applyMatrix4(this.mesh.matrixWorld);
     }
 }

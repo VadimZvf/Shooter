@@ -4,6 +4,7 @@ export enum MessageType {
     'PLAYER_SPAWN',
     'PLAYER_MOVE',
     'PLAYER_STOP',
+    'PLAYER_HIT',
     'PLAYER_SHOT',
     'PLAYER_DIE',
     'NPC_SPAWN',

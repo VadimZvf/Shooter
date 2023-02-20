@@ -7,7 +7,7 @@ const SPEED = 1;
 const HIT_DISTANCE = 1;
 const RELOAD_TIME = 2;
 
-export class ServerEnemy {
+export class ServerEnemy implements IHitable {
     private target: IHitable | void;
     private worldObject: Enemy;
     private life: number = 5;
@@ -31,14 +31,12 @@ export class ServerEnemy {
         const leftTimeFromLastHit = time - this.lastShotTime;
 
         if (distantionToTarget <= HIT_DISTANCE && leftTimeFromLastHit >= RELOAD_TIME) {
-            this.target.hit(time);
+            this.target.hit(time, direction);
             this.lastShotTime = time;
             return;
         }
 
         if (movedDistantion > 0) {
-            this.worldObject.recalculateBoundingBox();
-
             this.events.emit('move', this.worldObject.position.clone().add(direction.setLength(movedDistantion)));
         }
     }
@@ -71,6 +69,10 @@ export class ServerEnemy {
 
     public getBox(): Box3 {
         return this.worldObject.getBox();
+    }
+
+    public recalculateBoundingBox() {
+        this.worldObject.recalculateBoundingBox();
     }
 
     get position(): Vector3 {

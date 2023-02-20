@@ -71,4 +71,6 @@ export default class EnemyTarget extends Group implements IHitable {
     public getBox(): Box3 {
         return this.mesh.geometry.boundingBox;
     }
+
+    public recalculateBoundingBox() {}
 }

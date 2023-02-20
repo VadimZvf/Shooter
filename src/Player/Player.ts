@@ -1,30 +1,26 @@
-import EventEmitter from 'events';
-import { Clock, Group, BoxGeometry, Raycaster, Box3, PerspectiveCamera, MeshBasicMaterial, Mesh, Vector3, Vector2 } from 'three';
+import { Group, BoxGeometry, Box3, PerspectiveCamera, MeshBasicMaterial, Mesh, Vector3 } from 'three';
 import { ICharacter } from '../ICharacter';
+import { IHitable } from '../IHitable';
 import { PlayerCamera } from './PlayerCamera';
 
-let SCREEN_WIDTH = window.innerWidth;
-let SCREEN_HEIGHT = window.innerHeight;
-
-const RELOAD_TIME = 0.1;
-const MOVEMENT_SPEED = 10;
-
-export default class Player extends Group implements ICharacter {
+export default class Player extends Group implements ICharacter, IHitable {
     private camera: PlayerCamera;
     private mesh: Mesh;
+    private geometry: BoxGeometry;
 
-    constructor(spawnPosition: Vector3, ground: Mesh) {
+    constructor(spawnPosition: Vector3) {
         super();
 
-        const geometry = new BoxGeometry(1, 1, 1);
         const material = new MeshBasicMaterial({ color: 0x00ff00 });
-        this.mesh = new Mesh(geometry, material);
+        this.geometry = new BoxGeometry(1, 1, 1);
+        this.mesh = new Mesh(this.geometry, material);
         this.mesh.position.y = 0.5;
         this.add(this.mesh);
 
         this.position.copy(spawnPosition);
 
         this.camera = new PlayerCamera(spawnPosition);
+        this.recalculateBoundingBox();
     }
 
     public update(delta: number) {
@@ -50,6 +46,11 @@ export default class Player extends Group implements ICharacter {
     }
 
     public getBox(): Box3 {
-        return this.mesh.geometry.boundingBox;
+        return this.geometry.boundingBox;
+    }
+
+    public recalculateBoundingBox() {
+        this.geometry.computeBoundingBox();
+        this.geometry.boundingBox.applyMatrix4(this.mesh.matrixWorld);
     }
 }

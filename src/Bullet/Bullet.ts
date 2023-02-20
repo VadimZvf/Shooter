@@ -11,8 +11,9 @@ export default class Bullet extends Mesh {
     private startTime: number;
     public events = new EventEmitter();
     public material: ShaderMaterial;
+    public ownerID: number;
 
-    constructor(position: Vector3, direction: Vector3) {
+    constructor(ownerID: number, position: Vector3, direction: Vector3) {
         const geometry = new SphereBufferGeometry(0.1, 10, 10);
         const material = new ShaderMaterial({
             uniforms: {
@@ -24,6 +25,8 @@ export default class Bullet extends Mesh {
         });
         super(geometry, material);
 
+        this.ownerID = ownerID;
+
         this.position.copy(position);
         this.position.y += 0.5;
         this.updateMatrix();
@@ -34,17 +37,16 @@ export default class Bullet extends Mesh {
         this.direction = direction;
     }
 
-    private recalculateBoundingBox() {
-        this.geometry.computeBoundingBox();
-        this.geometry.boundingBox.applyMatrix4(this.matrixWorld);
-    }
-
     public isHit(box: Box3): boolean {
         return this.geometry.boundingBox.intersectsBox(box);
     }
 
     public hit() {
         this.events.emit('die');
+    }
+
+    public getDirection(): Vector3 {
+        return this.direction;
     }
 
     public update(delta: number, time: number) {
@@ -60,5 +62,10 @@ export default class Bullet extends Mesh {
         if (time - this.startTime > LIFE_TIME) {
             this.events.emit('die');
         }
+    }
+
+    private recalculateBoundingBox() {
+        this.geometry.computeBoundingBox();
+        this.geometry.boundingBox.applyMatrix4(this.matrixWorld);
     }
 }

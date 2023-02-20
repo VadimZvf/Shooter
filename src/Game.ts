@@ -36,7 +36,7 @@ export default class Game {
     private serverBulletShotController: ServerBulletShotController;
     private waveController: WaveController;
     private tower: EnemyTarget;
-    private remotePlayers: Record<number, RemotePlayer> = {};
+    private remotePlayers: Map<number, RemotePlayer> = new Map();
 
     constructor(room: Room) {
         this.room = room;
@@ -63,7 +63,7 @@ export default class Game {
 
         this.waveController = new WaveController(RESPAWN_POINT);
 
-        this.player = new Player(RESPAWN_POINT, this.plane.getGround());
+        this.player = new Player(RESPAWN_POINT);
         this.scene.add(this.player);
         this.scene.add(this.player.getCamera());
 
@@ -79,7 +79,7 @@ export default class Game {
         this.playerController = new PlayerController(this.player, this.plane.getGround(), this.player.getCamera(), this.enemyController);
         this.playerController.events.addListener('shot', (position, direction) => {
             const message = new P2PMessage(MessageType.PLAYER_SHOT);
-            message.setProp('x', position.x).setProp('z', position.z).setProp('direction_x', direction.x).setProp('direction_z', direction.z);
+            message.setProp('id', this.room.playerId).setProp('x', position.x).setProp('z', position.z).setProp('direction_x', direction.x).setProp('direction_z', direction.z);
             this.room.sendMessage(message);
             this.performMessage(this.room.playerId, message);
         });
@@ -124,16 +124,16 @@ export default class Game {
 
             case MessageType.PLAYER_MOVE:
                 const position = new Vector3(message.getProp('x'), 0, message.getProp('z'));
-                if (!this.remotePlayers[playerId]) {
+                if (!this.remotePlayers.get(playerId)) {
                     this.spawnRemotePlayer(playerId, position);
                     break;
                 }
 
-                this.remotePlayers[playerId].move(position, new Vector3(message.getProp('direction_x'), 0, message.getProp('direction_z')));
+                this.remotePlayers.get(playerId).move(position, new Vector3(message.getProp('direction_x'), 0, message.getProp('direction_z')));
                 break;
 
             case MessageType.PLAYER_SHOT:
-                const bullet = new Bullet(new Vector3(message.getProp('x'), 0, message.getProp('z')), new Vector3(message.getProp('direction_x'), 0, message.getProp('direction_z')));
+                const bullet = new Bullet(message.getProp('id'), new Vector3(message.getProp('x'), 0, message.getProp('z')), new Vector3(message.getProp('direction_x'), 0, message.getProp('direction_z')));
                 this.bulletShotController.addBullet(bullet);
                 break;
 
@@ -178,7 +178,7 @@ export default class Game {
         }
 
         if (this.serverBulletShotController) {
-            this.serverBulletShotController.update(time, this.bulletShotController.bullets, this.serverEnemyController.getEnemies());
+            this.serverBulletShotController.update(time, this.bulletShotController.bullets, this.serverEnemyController.getEnemies(), this.remotePlayers, this.room.playerId, this.player);
         }
 
         requestAnimationFrame(this.update);
@@ -261,7 +261,7 @@ export default class Game {
         const player = new RemotePlayer();
         player.move(position, new Vector3(0, 0, 0));
 
-        this.remotePlayers[id] = player;
+        this.remotePlayers.set(id, player);
         this.scene.add(player);
     }
 }
