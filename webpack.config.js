@@ -8,6 +8,10 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /\.png$/i,
+        use: 'file-loader',
+      },
+      {
         test: /\.frag$/i,
         use: 'raw-loader',
       },

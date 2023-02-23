@@ -1,6 +1,6 @@
 import { Group, Mesh, PlaneGeometry, MeshBasicMaterial, Vector3 } from 'three';
 
-const COLOR = 0xffddcc;
+const COLOR = 0xacbc8a;
 
 export default class Plane extends Group {
     private grid: Mesh;

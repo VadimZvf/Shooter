@@ -169,7 +169,7 @@ export default class Game {
         this.tower.update();
         this.plane.update(time);
         this.playerController.update(delta);
-        this.player.update(delta);
+        this.player.update(delta, time);
         this.enemyController.update(delta, time);
         this.bulletShotController.update(delta, time);
 
