@@ -12,7 +12,7 @@ varying vec2 vTextureCoord;
 void main(void) {
     float x = vTextureCoord.x;
 
-    if (uIsInvertSprite == 0.0) {
+    if (uIsInvertSprite == 1.0) {
         x = 1.0 - vTextureCoord.x;
     }
 

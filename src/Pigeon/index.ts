@@ -1,71 +1,83 @@
-import { TextureLoader, ShaderMaterial, PlaneGeometry, Mesh } from 'three';
+import { Vector3 } from 'three';
+import AnimatedSprite from '../AnimatedSprite';
 import sprites from './sprite_sheet.png';
-import vertexShader from './vertex_shader.frag';
-import fragmentShader from './fragment_shader.frag';
-
-const texture = new TextureLoader().load(sprites);
 
 type State = 'WALK_LEFT' | 'WALK_RIGHT' | 'WALK_UP' | 'WALK_DOWN' | 'WALK_LEFT_UP' | 'WALK_LEFT_DOWN' | 'WALK_RIGHT_UP' | 'WALK_RIGHT_DOWN';
 
-export default class Pigeon extends Mesh<PlaneGeometry, ShaderMaterial> {
+export default class Pigeon extends AnimatedSprite {
     constructor() {
-        const geometry = new PlaneGeometry(3, 3);
-        const material = new ShaderMaterial({
-            uniforms: {
-                uSpriteSheet: { value: texture },
-                uTime: { value: 1.0 },
-                uSpritesPerAnimation: { value: 6 },
-                uAnimationCount: { value: 5 },
-                uCurrentAnimation: { value: 3 },
-                uIsInvertSprite: { value: 0 },
-            },
-            vertexShader,
-            fragmentShader,
-            transparent: true,
+        super({
+            spriteUrl: sprites,
+            animationsCount: 5,
+            spritesPerAnimation: 6,
+            initialAnimaton: 3,
         });
 
-        super(geometry, material);
-
-        this.position.setY(3);
-    }
-
-    public update(delta: number, time: number) {
-        this.material.uniforms.uTime.value = time;
+        this.position.setY(1.1);
     }
 
     public setState(state: State) {
         switch (state) {
             case 'WALK_DOWN':
-                this.material.uniforms.uCurrentAnimation.value = 0;
-                this.material.uniforms.uIsInvertSprite.value = 0;
+                this.setAnimation(0, false);
                 break;
             case 'WALK_UP':
-                this.material.uniforms.uCurrentAnimation.value = 3;
-                this.material.uniforms.uIsInvertSprite.value = 0;
+                this.setAnimation(3, false);
                 break;
             case 'WALK_LEFT':
-                this.material.uniforms.uCurrentAnimation.value = 2;
-                this.material.uniforms.uIsInvertSprite.value = 0;
+                this.setAnimation(2, false);
                 break;
             case 'WALK_RIGHT':
-                this.material.uniforms.uCurrentAnimation.value = 2;
-                this.material.uniforms.uIsInvertSprite.value = 1;
+                this.setAnimation(2, true);
                 break;
             case 'WALK_LEFT_UP':
-                this.material.uniforms.uCurrentAnimation.value = 4;
-                this.material.uniforms.uIsInvertSprite.value = 0;
+                this.setAnimation(4, false);
                 break;
             case 'WALK_RIGHT_UP':
-                this.material.uniforms.uCurrentAnimation.value = 4;
-                this.material.uniforms.uIsInvertSprite.value = 1;
+                this.setAnimation(4, true);
                 break;
             case 'WALK_LEFT_DOWN':
-                this.material.uniforms.uCurrentAnimation.value = 1;
-                this.material.uniforms.uIsInvertSprite.value = 0;
+                this.setAnimation(1, false);
                 break;
             case 'WALK_RIGHT_DOWN':
-                this.material.uniforms.uCurrentAnimation.value = 1;
-                this.material.uniforms.uIsInvertSprite.value = 1;
+                this.setAnimation(1, true);
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    public lookDirection(direction: Vector3) {
+        const angle = Math.atan2(direction.z, direction.x);
+
+        const sateIndex = Math.round(((angle + Math.PI) / (Math.PI * 2)) * 8);
+        const looped = sateIndex === 8 ? 0 : sateIndex;
+
+        switch (looped) {
+            case 0:
+                this.setState('WALK_LEFT');
+                break;
+            case 1:
+                this.setState('WALK_LEFT_UP');
+                break;
+            case 2:
+                this.setState('WALK_UP');
+                break;
+            case 3:
+                this.setState('WALK_RIGHT_UP');
+                break;
+            case 4:
+                this.setState('WALK_RIGHT');
+                break;
+            case 5:
+                this.setState('WALK_RIGHT_DOWN');
+                break;
+            case 6:
+                this.setState('WALK_DOWN');
+                break;
+            case 7:
+                this.setState('WALK_LEFT_DOWN');
                 break;
 
             default:
