@@ -119,6 +119,10 @@ export default class Game {
                     const waveNumberInformMessage = new P2PMessage(MessageType.WAVE_NUMBER);
                     waveNumberInformMessage.setProp('id', this.waveController.getWaveNumber());
                     this.room.sendMessage(waveNumberInformMessage);
+
+                    const planeState = new P2PMessage(MessageType.STATE);
+                    planeState.addRawData(this.plane.getTreesData());
+                    this.room.sendDirectMessage(planeState, playerId);
                 }
                 break;
 
@@ -157,6 +161,11 @@ export default class Game {
                 this.waveController.syncWaveNumber(message.getProp('id'));
                 break;
 
+            case MessageType.STATE:
+                // @ts-ignore
+                this.plane.initializeFromData(message.getRawData());
+                break;
+
             default:
                 break;
         }
@@ -187,6 +196,8 @@ export default class Game {
     };
 
     private initHost() {
+        this.plane.initialize();
+
         if (!this.serverEnemyController) {
             this.serverEnemyController = new ServerEnemyController(this.tower);
         }

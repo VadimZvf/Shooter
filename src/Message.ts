@@ -1,5 +1,6 @@
 export enum MessageType {
     'HOST_ID',
+    'STATE',
     'WAVE_NUMBER',
     'PLAYER_SPAWN',
     'PLAYER_MOVE',
@@ -27,6 +28,8 @@ export default class Message {
         direction_z: 0,
     };
 
+    rawData: Object = {};
+
     constructor(type: MessageType) {
         this.type = type;
     }
@@ -34,6 +37,12 @@ export default class Message {
     static deserialize(buffer: ArrayBuffer): Message {
         const data = new Int32Array(buffer);
         const message = new Message(data[0] as MessageType);
+
+        if (data[0] === MessageType.STATE) {
+            const rawData = Message.deserializeRawData(data);
+            message.addRawData(rawData);
+            return message;
+        }
 
         for (let index = 0; index < PROPS.length; index++) {
             const key = PROPS[index];
@@ -43,16 +52,22 @@ export default class Message {
         return message;
     }
 
-    setProp(name: Prop, value: number) {
-        this.data[name] = value;
-        return this;
-    }
+    static deserializeRawData(data: Int32Array) {
+        let str = '';
 
-    getProp(name: Prop): number {
-        return this.data[name];
+        for (let index = 1; index < data.length; index++) {
+            const symbol = String.fromCharCode(data[index]);
+            str += symbol;
+        }
+
+        return JSON.parse(str);
     }
 
     public serialize(): Int32Array {
+        if (this.type === MessageType.STATE) {
+            return this.serializeRawData();
+        }
+
         const data = new Int32Array(new ArrayBuffer(PROPS.length * 40));
 
         data[0] = this.type;
@@ -63,5 +78,45 @@ export default class Message {
         }
 
         return data;
+    }
+
+    public serializeRawData(): Int32Array {
+        const strData = JSON.stringify(this.rawData);
+
+        const buf = new ArrayBuffer(strData.length * 4 + 4);
+        const data = new Int32Array(buf);
+
+        data[0] = this.type;
+
+        for (let i = 0; i < strData.length; i++) {
+            data[i + 1] = strData.charCodeAt(i);
+        }
+
+        return data;
+    }
+
+    public setProp(name: Prop, value: number) {
+        this.data[name] = value;
+        return this;
+    }
+
+    public getProp(name: Prop): number {
+        return this.data[name];
+    }
+
+    public addRawData(rawData: Object) {
+        if (this.type !== MessageType.STATE) {
+            throw new Error('Raw data can be used only for STATE type message');
+        }
+
+        this.rawData = rawData;
+    }
+
+    public getRawData() {
+        if (this.type !== MessageType.STATE) {
+            throw new Error('Raw data can be used only for STATE type message');
+        }
+
+        return this.rawData;
     }
 }

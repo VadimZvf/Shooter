@@ -2,8 +2,6 @@ import { Vector3 } from 'three';
 import AnimatedSprite from '../AnimatedSprite';
 import sprites from './sprite_sheet.png';
 
-type State = 'WALK_LEFT' | 'WALK_RIGHT' | 'WALK_UP' | 'WALK_DOWN' | 'WALK_LEFT_UP' | 'WALK_LEFT_DOWN' | 'WALK_RIGHT_UP' | 'WALK_RIGHT_DOWN';
-
 export default class Pigeon extends AnimatedSprite {
     constructor() {
         super({
@@ -13,39 +11,7 @@ export default class Pigeon extends AnimatedSprite {
             initialAnimaton: 3,
         });
 
-        this.position.setY(1.1);
-    }
-
-    public setState(state: State) {
-        switch (state) {
-            case 'WALK_DOWN':
-                this.setAnimation(0, false);
-                break;
-            case 'WALK_UP':
-                this.setAnimation(3, false);
-                break;
-            case 'WALK_LEFT':
-                this.setAnimation(2, false);
-                break;
-            case 'WALK_RIGHT':
-                this.setAnimation(2, true);
-                break;
-            case 'WALK_LEFT_UP':
-                this.setAnimation(4, false);
-                break;
-            case 'WALK_RIGHT_UP':
-                this.setAnimation(4, true);
-                break;
-            case 'WALK_LEFT_DOWN':
-                this.setAnimation(1, false);
-                break;
-            case 'WALK_RIGHT_DOWN':
-                this.setAnimation(1, true);
-                break;
-
-            default:
-                break;
-        }
+        this.position.setY(0.8);
     }
 
     public lookDirection(direction: Vector3) {
@@ -56,28 +22,36 @@ export default class Pigeon extends AnimatedSprite {
 
         switch (looped) {
             case 0:
-                this.setState('WALK_LEFT');
+                // WALK_LEFT
+                this.setAnimation(2, false);
                 break;
             case 1:
-                this.setState('WALK_LEFT_UP');
+                // WALK_LEFT_UP
+                this.setAnimation(4, false);
                 break;
             case 2:
-                this.setState('WALK_UP');
+                // WALK_UP
+                this.setAnimation(3, false);
                 break;
             case 3:
-                this.setState('WALK_RIGHT_UP');
+                // WALK_RIGHT_UP
+                this.setAnimation(4, true);
                 break;
             case 4:
-                this.setState('WALK_RIGHT');
+                // WALK_RIGHT
+                this.setAnimation(2, true);
                 break;
             case 5:
-                this.setState('WALK_RIGHT_DOWN');
+                // WALK_RIGHT_DOWN
+                this.setAnimation(1, true);
                 break;
             case 6:
-                this.setState('WALK_DOWN');
+                // WALK_DOWN
+                this.setAnimation(0, false);
                 break;
             case 7:
-                this.setState('WALK_LEFT_DOWN');
+                // WALK_LEFT_DOWN
+                this.setAnimation(1, false);
                 break;
 
             default:
