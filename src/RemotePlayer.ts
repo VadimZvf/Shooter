@@ -10,7 +10,7 @@ export default class RemotePlayer extends Group implements ICharacter {
     constructor() {
         super();
 
-        const material = new MeshBasicMaterial({ transparent: true, opacity: 0 });
+        const material = new MeshBasicMaterial({ transparent: true, opacity: 0, depthTest: true, depthWrite: false });
         this.geometry = new BoxGeometry(1, 1, 1);
         this.mesh = new Mesh(this.geometry, material);
         this.mesh.position.y = 0.5;
